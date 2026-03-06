@@ -1,0 +1,28 @@
+{
+    "name": "fukazawa/iap-example",
+    "description": "fukazawa/iap package usage example",
+    "type": "project",
+    "require": {
+        "php": "^8.4",
+        "fukazawa/iap": "dev-main"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "/iap-package",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true
+    }
+}
