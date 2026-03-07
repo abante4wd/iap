@@ -43,6 +43,41 @@ composer update
 }
 ```
 
+### ZIP ファイルから導入する場合
+
+Git アクセス権がない場合は、ZIP 配布からインストールできます。
+
+1. ZIP を展開し、プロジェクト内の `packages/iap/` に配置:
+
+```
+your-project/
+├── packages/
+│   └── iap/          ← ZIP の中身をここに展開
+│       ├── composer.json
+│       └── src/
+├── composer.json
+└── ...
+```
+
+2. `composer.json` に `path` リポジトリを追加:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "./packages/iap"
+        }
+    ]
+}
+```
+
+3. パッケージをインストール:
+
+```bash
+composer require fukazawa/iap:*
+```
+
 ## パッケージ構造
 
 ```
