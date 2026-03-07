@@ -38,7 +38,7 @@ class EloquentSubscriptionRepository implements SubscriptionRepositoryInterface
     }
 
     /**
-     * @param SubscriptionStatus[] $statuses
+     * @param  SubscriptionStatus[]  $statuses
      * @return SubscriptionData[]
      */
     public function findExpiringSubscriptions(DateTimeImmutable $before, array $statuses): array

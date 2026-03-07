@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__.'/../vendor/autoload.php';
 
 use App\InMemoryPurchaseRepository;
 use App\InMemorySubscriptionRepository;
@@ -12,11 +12,11 @@ use Fukazawa\Iap\DTO\SubscriptionInfo;
 use Fukazawa\Iap\DTO\VerificationResult;
 use Fukazawa\Iap\Enums\Platform;
 use Fukazawa\Iap\Enums\PurchaseType;
-use Fukazawa\Iap\Store\Config\GoogleConfig;
 use Fukazawa\Iap\Store\Config\AppleConfig;
+use Fukazawa\Iap\Store\Config\GoogleConfig;
 
 echo "=== fukazawa/iap パッケージ利用サンプル ===\n";
-echo "PHP " . PHP_VERSION . "\n\n";
+echo 'PHP '.PHP_VERSION."\n\n";
 
 // -----------------------------------------------
 // 1. Config DTO の作成
@@ -64,8 +64,8 @@ $result = new VerificationResult(
     productId: 'com.example.myapp.gem_100',
     rawResponse: ['purchaseState' => 0, 'consumptionState' => 0],
 );
-echo "VerificationResult: valid=" . ($result->isValid ? 'true' : 'false')
-    . ", txId={$result->transactionId}, productId={$result->productId}\n";
+echo 'VerificationResult: valid='.($result->isValid ? 'true' : 'false')
+    .", txId={$result->transactionId}, productId={$result->productId}\n";
 
 // サブスクリプション付きの VerificationResult
 $subInfo = new SubscriptionInfo(
@@ -86,23 +86,23 @@ $resultWithSub = new VerificationResult(
 );
 
 echo "SubscriptionResult: status={$resultWithSub->subscriptionInfo->status}, "
-    . "expires={$resultWithSub->subscriptionInfo->expiresAt->format('Y-m-d H:i:s')}, "
-    . "autoRenew=" . ($resultWithSub->subscriptionInfo->autoRenewing ? 'yes' : 'no') . "\n\n";
+    ."expires={$resultWithSub->subscriptionInfo->expiresAt->format('Y-m-d H:i:s')}, "
+    .'autoRenew='.($resultWithSub->subscriptionInfo->autoRenewing ? 'yes' : 'no')."\n\n";
 
 // -----------------------------------------------
 // 3. Enum の利用デモ
 // -----------------------------------------------
 echo "--- 3. Enums ---\n";
 
-echo "Platforms: ";
+echo 'Platforms: ';
 foreach (Platform::cases() as $p) {
-    echo $p->value . ' ';
+    echo $p->value.' ';
 }
 echo "\n";
 
-echo "PurchaseTypes: ";
+echo 'PurchaseTypes: ';
 foreach (PurchaseType::cases() as $t) {
-    echo $t->value . ' ';
+    echo $t->value.' ';
 }
 echo "\n\n";
 
@@ -111,9 +111,9 @@ echo "\n\n";
 // -----------------------------------------------
 echo "--- 4. Repository & Service implementations ---\n";
 
-$purchaseRepo = new InMemoryPurchaseRepository();
-$subscriptionRepo = new InMemorySubscriptionRepository();
-$rewardService = new SampleRewardGrantService();
+$purchaseRepo = new InMemoryPurchaseRepository;
+$subscriptionRepo = new InMemorySubscriptionRepository;
+$rewardService = new SampleRewardGrantService;
 
 // 商品検索
 $found = $purchaseRepo->findProductByProductId('gem_100');
@@ -154,6 +154,6 @@ $duplicate = $purchaseRepo->findVerifiedByPlatformAndTransactionId(
     Platform::Google,
     'GPA.1234-5678-9012-34567',
 );
-echo "\nDuplicate check: " . ($duplicate ? "found (id={$duplicate->id})" : 'not found') . "\n\n";
+echo "\nDuplicate check: ".($duplicate ? "found (id={$duplicate->id})" : 'not found')."\n\n";
 
 echo "=== サンプル完了 ===\n";

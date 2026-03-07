@@ -24,6 +24,7 @@ class PurchaseVerificationService
 
     /**
      * @return array{purchase: PurchaseData, rewards: array}
+     *
      * @throws StoreVerificationFailedException
      * @throws PurchaseAlreadyVerifiedException
      */
@@ -35,7 +36,7 @@ class PurchaseVerificationService
         ?string $receiptData = null,
     ): array {
         $product = $this->purchaseRepo->findProductByProductId($productId);
-        if (!$product) {
+        if (! $product) {
             throw new StoreVerificationFailedException("Product not found: {$productId}");
         }
 
@@ -48,12 +49,12 @@ class PurchaseVerificationService
             ? $verifier->verifySubscription($storeProductId, $purchaseToken, $receiptData)
             : $verifier->verifyProduct($storeProductId, $purchaseToken, $receiptData);
 
-        if (!$result->isValid) {
+        if (! $result->isValid) {
             $purchase = $this->purchaseRepo->createFailed(
                 $userId,
                 $product->id,
                 $platform,
-                $result->transactionId ?: 'unknown_' . uniqid(),
+                $result->transactionId ?: 'unknown_'.uniqid(),
                 $purchaseToken,
                 $receiptData,
                 $result->rawResponse,

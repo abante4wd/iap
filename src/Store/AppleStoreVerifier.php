@@ -2,16 +2,17 @@
 
 namespace Fukazawa\Iap\Store;
 
+use Firebase\JWT\JWT;
 use Fukazawa\Iap\Contracts\StoreVerifierInterface;
 use Fukazawa\Iap\DTO\SubscriptionInfo;
 use Fukazawa\Iap\DTO\VerificationResult;
 use Fukazawa\Iap\Store\Config\AppleConfig;
-use Firebase\JWT\JWT;
 use GuzzleHttp\Client;
 
 class AppleStoreVerifier implements StoreVerifierInterface
 {
     private string $baseUrl;
+
     private Client $httpClient;
 
     public function __construct(
@@ -22,7 +23,7 @@ class AppleStoreVerifier implements StoreVerifierInterface
             ? 'https://api.storekit.itunes.apple.com'
             : 'https://api.storekit-sandbox.itunes.apple.com';
 
-        $this->httpClient = $httpClient ?? new Client();
+        $this->httpClient = $httpClient ?? new Client;
     }
 
     public function verifyProduct(string $productId, string $purchaseToken, ?string $receiptData = null): VerificationResult
@@ -64,13 +65,13 @@ class AppleStoreVerifier implements StoreVerifierInterface
                     transactionId: $transactionId,
                     productId: $productId,
                     rawResponse: $responseData,
-                    errorMessage: 'Apple API returned status: ' . $statusCode,
+                    errorMessage: 'Apple API returned status: '.$statusCode,
                 );
             }
 
             $signedTransaction = $responseData['signedTransactionInfo'] ?? null;
 
-            if (!$signedTransaction) {
+            if (! $signedTransaction) {
                 return new VerificationResult(
                     isValid: false,
                     transactionId: $transactionId,
@@ -96,8 +97,8 @@ class AppleStoreVerifier implements StoreVerifierInterface
             if ($isSubscription) {
                 $expiresDateMs = $transactionPayload['expiresDate'] ?? null;
                 $expiresAt = $expiresDateMs
-                    ? (new \DateTimeImmutable())->setTimestamp((int) ($expiresDateMs / 1000))
-                    : new \DateTimeImmutable();
+                    ? (new \DateTimeImmutable)->setTimestamp((int) ($expiresDateMs / 1000))
+                    : new \DateTimeImmutable;
 
                 $purchaseDateMs = $transactionPayload['originalPurchaseDate']
                     ?? $transactionPayload['purchaseDate'];
@@ -105,10 +106,10 @@ class AppleStoreVerifier implements StoreVerifierInterface
                 $subscriptionInfo = new SubscriptionInfo(
                     originalTransactionId: (string) ($transactionPayload['originalTransactionId'] ?? $transactionId),
                     currentTransactionId: (string) ($transactionPayload['transactionId'] ?? $transactionId),
-                    startsAt: (new \DateTimeImmutable())->setTimestamp((int) ($purchaseDateMs / 1000)),
+                    startsAt: (new \DateTimeImmutable)->setTimestamp((int) ($purchaseDateMs / 1000)),
                     expiresAt: $expiresAt,
-                    autoRenewing: !($transactionPayload['isUpgraded'] ?? false),
-                    status: $expiresAt > new \DateTimeImmutable() ? 'active' : 'expired',
+                    autoRenewing: ! ($transactionPayload['isUpgraded'] ?? false),
+                    status: $expiresAt > new \DateTimeImmutable ? 'active' : 'expired',
                 );
             }
 
@@ -153,7 +154,7 @@ class AppleStoreVerifier implements StoreVerifierInterface
         }
 
         $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
-        if (!$payload) {
+        if (! $payload) {
             throw new \RuntimeException('Failed to decode JWS payload');
         }
 

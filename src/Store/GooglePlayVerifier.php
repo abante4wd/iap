@@ -16,7 +16,7 @@ class GooglePlayVerifier implements StoreVerifierInterface
     public function __construct(
         private GoogleConfig $config,
     ) {
-        $client = new GoogleClient();
+        $client = new GoogleClient;
         $client->setApplicationName($this->config->applicationName);
         $client->setAuthConfig($this->config->serviceAccountJsonPath);
         $client->addScope(AndroidPublisher::ANDROIDPUBLISHER);
@@ -41,7 +41,7 @@ class GooglePlayVerifier implements StoreVerifierInterface
                     transactionId: $response->getOrderId() ?? '',
                     productId: $productId,
                     rawResponse: $responseArray,
-                    errorMessage: 'Purchase state is not purchased: ' . $response->getPurchaseState(),
+                    errorMessage: 'Purchase state is not purchased: '.$response->getPurchaseState(),
                 );
             }
 
@@ -92,7 +92,7 @@ class GooglePlayVerifier implements StoreVerifierInterface
                 originalTransactionId: $latestOrderId,
                 currentTransactionId: $latestOrderId,
                 startsAt: new \DateTimeImmutable($response->getStartTime()),
-                expiresAt: $expiryTime ? new \DateTimeImmutable($expiryTime) : new \DateTimeImmutable(),
+                expiresAt: $expiryTime ? new \DateTimeImmutable($expiryTime) : new \DateTimeImmutable,
                 autoRenewing: $autoRenewing,
                 status: $status,
             );
@@ -122,7 +122,7 @@ class GooglePlayVerifier implements StoreVerifierInterface
                 $this->config->packageName,
                 $productId,
                 $purchaseToken,
-                new AndroidPublisher\ProductPurchasesAcknowledgeRequest(),
+                new AndroidPublisher\ProductPurchasesAcknowledgeRequest,
             );
 
             return true;

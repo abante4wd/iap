@@ -20,7 +20,7 @@ class RewardGrantService implements RewardGrantServiceInterface
     {
         $product = Product::find($purchase->productId);
 
-        if (!$product) {
+        if (! $product) {
             return [];
         }
 

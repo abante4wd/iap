@@ -14,7 +14,7 @@ class SubscriptionCheckService
     ) {}
 
     /**
-     * @param callable|null $onProgress fn(string $message): void
+     * @param  callable|null  $onProgress  fn(string $message): void
      * @return array{checked: int, updated: int, errors: int}
      */
     public function checkExpiring(?callable $onProgress = null): array
@@ -24,7 +24,7 @@ class SubscriptionCheckService
 
         $subscriptions = $this->subscriptionRepo->findExpiringSubscriptions($before, $statuses);
 
-        $onProgress && $onProgress("Checking " . count($subscriptions) . " subscriptions...");
+        $onProgress && $onProgress('Checking '.count($subscriptions).' subscriptions...');
 
         $updated = 0;
         $errors = 0;

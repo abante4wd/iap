@@ -20,7 +20,7 @@ class EloquentPurchaseRepository implements PurchaseRepositoryInterface
     {
         $product = Product::where('product_id', $productId)->first();
 
-        if (!$product) {
+        if (! $product) {
             return null;
         }
 
@@ -41,7 +41,7 @@ class EloquentPurchaseRepository implements PurchaseRepositoryInterface
             ->where('status', PurchaseStatus::Verified->value)
             ->first();
 
-        if (!$purchase) {
+        if (! $purchase) {
             return null;
         }
 

@@ -105,7 +105,7 @@ class InMemoryPurchaseRepository implements PurchaseRepositoryInterface
             status: PurchaseStatus::Verified,
             receiptPayload: $receipt,
             storeResponse: $response,
-            verifiedAt: new \DateTimeImmutable(),
+            verifiedAt: new \DateTimeImmutable,
         );
 
         $this->purchases[$purchase->id] = $purchase;
