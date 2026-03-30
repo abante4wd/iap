@@ -54,8 +54,8 @@ $product = new ProductData(
 );
 
 echo "Product: {$product->productId} ({$product->name}, type: {$product->type->value})\n";
-echo "  Google Store ID: {$product->storeProductId('google')}\n";
-echo "  Apple Store ID:  {$product->storeProductId('apple')}\n\n";
+echo "  Google Store ID: {$product->storeProductId(Platform::Google)}\n";
+echo "  Apple Store ID:  {$product->storeProductId(Platform::Apple)}\n\n";
 
 // VerificationResult のデモ
 $result = new VerificationResult(

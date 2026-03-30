@@ -2,6 +2,7 @@
 
 namespace Fukazawa\Iap\DTO;
 
+use Fukazawa\Iap\Enums\Platform;
 use Fukazawa\Iap\Enums\PurchaseType;
 
 readonly class ProductData
@@ -15,11 +16,11 @@ readonly class ProductData
         public ?string $appleProductId = null,
     ) {}
 
-    public function storeProductId(string $platform): string
+    public function storeProductId(Platform $platform): string
     {
         return match ($platform) {
-            'google' => $this->googleProductId ?? $this->productId,
-            'apple' => $this->appleProductId ?? $this->productId,
+            Platform::Google => $this->googleProductId ?? $this->productId,
+            Platform::Apple => $this->appleProductId ?? $this->productId,
         };
     }
 }

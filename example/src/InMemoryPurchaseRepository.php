@@ -167,6 +167,19 @@ class InMemoryPurchaseRepository implements PurchaseRepositoryInterface
         return null;
     }
 
+    public function findAllPendingByPlatform(Platform $platform): array
+    {
+        $result = [];
+        foreach ($this->purchases as $purchase) {
+            if ($purchase->platform === $platform
+                && $purchase->status === PurchaseStatus::Deferred) {
+                $result[] = $purchase;
+            }
+        }
+
+        return $result;
+    }
+
     public function completePending(int|string $purchaseId, string $txId, array $response): PurchaseData
     {
         $existing = $this->purchases[$purchaseId] ?? null;

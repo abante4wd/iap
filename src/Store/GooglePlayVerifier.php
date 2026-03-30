@@ -25,7 +25,7 @@ class GooglePlayVerifier implements StoreVerifierInterface
         $this->publisher = new AndroidPublisher($client);
     }
 
-    public function verifyProduct(string $productId, string $purchaseToken, ?string $receiptData = null): VerificationResult
+    public function verifyProduct(string $productId, string $purchaseToken, ?string $receiptData = null, ?bool $clientReportsPending = null): VerificationResult
     {
         try {
             $response = $this->publisher->purchases_products->get(
@@ -75,7 +75,7 @@ class GooglePlayVerifier implements StoreVerifierInterface
         }
     }
 
-    public function verifySubscription(string $productId, string $purchaseToken, ?string $receiptData = null): VerificationResult
+    public function verifySubscription(string $productId, string $purchaseToken, ?string $receiptData = null, ?bool $clientReportsPending = null): VerificationResult
     {
         try {
             $response = $this->publisher->purchases_subscriptionsv2->get(
@@ -85,7 +85,16 @@ class GooglePlayVerifier implements StoreVerifierInterface
 
             $responseArray = $response->toSimpleObject() ? (array) $response->toSimpleObject() : [];
 
-            $lineItems = $response->getLineItems();
+            $lineItems = $response->getLineItems() ?? [];
+            if (empty($lineItems)) {
+                return new VerificationResult(
+                    isValid: false,
+                    transactionId: $response->getLatestOrderId() ?? '',
+                    productId: $productId,
+                    rawResponse: $responseArray,
+                    errorMessage: 'No line items found in subscription response',
+                );
+            }
             $expiryTime = $lineItems[0]->getExpiryTime() ?? null;
             $autoRenewing = $lineItems[0]->getAutoRenewingPlan()?->getAutoRenewEnabled() ?? false;
 
@@ -130,17 +139,13 @@ class GooglePlayVerifier implements StoreVerifierInterface
 
     public function acknowledge(string $productId, string $purchaseToken): bool
     {
-        try {
-            $this->publisher->purchases_products->acknowledge(
-                $this->config->packageName,
-                $productId,
-                $purchaseToken,
-                new AndroidPublisher\ProductPurchasesAcknowledgeRequest,
-            );
+        $this->publisher->purchases_products->acknowledge(
+            $this->config->packageName,
+            $productId,
+            $purchaseToken,
+            new AndroidPublisher\ProductPurchasesAcknowledgeRequest,
+        );
 
-            return true;
-        } catch (\Exception $e) {
-            throw $e;
-        }
+        return true;
     }
 }

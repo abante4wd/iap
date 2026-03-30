@@ -33,7 +33,7 @@ class DeferredPurchaseService
         }
 
         $verifier = $this->verifierFactory->make($platform);
-        $storeProductId = $product->storeProductId($platform->value);
+        $storeProductId = $product->storeProductId($platform);
 
         $isSubscription = $product->type === PurchaseType::Subscription;
         $result = $isSubscription
@@ -52,7 +52,7 @@ class DeferredPurchaseService
             );
 
             if ($platform === Platform::Google && $product->type === PurchaseType::Consumable) {
-                $acknowledged = $verifier->acknowledge($product->storeProductId($platform->value), $purchaseToken);
+                $acknowledged = $verifier->acknowledge($product->storeProductId($platform), $purchaseToken);
                 if ($acknowledged) {
                     $this->purchaseRepo->markAcknowledged($purchase->id);
                 }
@@ -88,22 +88,19 @@ class DeferredPurchaseService
         $stats = ['completed' => 0, 'still_pending' => 0, 'failed' => 0];
 
         foreach ([Platform::Google, Platform::Apple] as $platform) {
-            $token = '';
-            while (true) {
-                $pending = $this->purchaseRepo->findPendingByPlatformAndToken($platform, $token);
-                if (! $pending) {
-                    break;
-                }
+            $pendingList = $this->purchaseRepo->findAllPendingByPlatform($platform);
 
-                $result = $this->completePending($platform, $pending->purchaseToken);
-                if ($result) {
-                    $stats['completed']++;
-                } else {
-                    $stats['still_pending']++;
+            foreach ($pendingList as $pending) {
+                try {
+                    $result = $this->completePending($platform, $pending->purchaseToken);
+                    if ($result) {
+                        $stats['completed']++;
+                    } else {
+                        $stats['still_pending']++;
+                    }
+                } catch (\Exception $e) {
+                    $stats['failed']++;
                 }
-
-                // 同じトークンで無限ループしないようにbreak
-                break;
             }
         }
 

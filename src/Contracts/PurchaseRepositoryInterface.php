@@ -50,6 +50,9 @@ interface PurchaseRepositoryInterface
 
     public function findPendingByPlatformAndToken(Platform $platform, string $token): ?PurchaseData;
 
+    /** @return PurchaseData[] */
+    public function findAllPendingByPlatform(Platform $platform): array;
+
     public function completePending(int|string $purchaseId, string $txId, array $response): PurchaseData;
 
     public function cancelPending(int|string $purchaseId, ?string $reason = null): void;

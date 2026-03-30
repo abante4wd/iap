@@ -41,7 +41,7 @@ class PurchaseVerificationService
         }
 
         $verifier = $this->verifierFactory->make($platform);
-        $storeProductId = $product->storeProductId($platform->value);
+        $storeProductId = $product->storeProductId($platform);
 
         $isSubscription = $product->type === PurchaseType::Subscription;
 
@@ -55,7 +55,7 @@ class PurchaseVerificationService
                 $userId,
                 $product->id,
                 $platform,
-                $result->transactionId ?: 'pending_'.uniqid(),
+                $result->transactionId ?: 'pending_'.hash('sha256', $purchaseToken),
                 $purchaseToken,
                 $receiptData,
                 $result->rawResponse,
@@ -74,7 +74,7 @@ class PurchaseVerificationService
                 $userId,
                 $product->id,
                 $platform,
-                $result->transactionId ?: 'unknown_'.uniqid(),
+                $result->transactionId ?: 'failed_'.hash('sha256', $purchaseToken),
                 $purchaseToken,
                 $receiptData,
                 $result->rawResponse,
@@ -103,7 +103,7 @@ class PurchaseVerificationService
             );
 
             if ($platform === Platform::Google && $product->type === PurchaseType::Consumable) {
-                $acknowledged = $verifier->acknowledge($product->storeProductId($platform->value), $purchaseToken);
+                $acknowledged = $verifier->acknowledge($product->storeProductId($platform), $purchaseToken);
                 if ($acknowledged) {
                     $this->purchaseRepo->markAcknowledged($purchase->id);
                 }

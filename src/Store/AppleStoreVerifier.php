@@ -132,7 +132,8 @@ class AppleStoreVerifier implements StoreVerifierInterface
                     currentTransactionId: (string) ($transactionPayload['transactionId'] ?? $transactionId),
                     startsAt: (new \DateTimeImmutable)->setTimestamp((int) ($purchaseDateMs / 1000)),
                     expiresAt: $expiresAt,
-                    autoRenewing: ! ($transactionPayload['isUpgraded'] ?? false),
+                    // expirationIntent が存在する場合は自動更新が無効化されている
+                    autoRenewing: ! isset($transactionPayload['expirationIntent']),
                     status: $expiresAt > new \DateTimeImmutable ? 'active' : 'expired',
                 );
             }
@@ -158,6 +159,9 @@ class AppleStoreVerifier implements StoreVerifierInterface
     private function generateJwt(): string
     {
         $privateKey = file_get_contents($this->config->privateKeyPath);
+        if ($privateKey === false) {
+            throw new \RuntimeException("Failed to read private key file: {$this->config->privateKeyPath}");
+        }
 
         $payload = [
             'iss' => $this->config->issuerId,

@@ -154,6 +154,15 @@ class EloquentPurchaseRepository implements PurchaseRepositoryInterface
         return $this->toDto($purchase);
     }
 
+    public function findAllPendingByPlatform(Platform $platform): array
+    {
+        return Purchase::where('platform', $platform->value)
+            ->where('status', PurchaseStatus::Deferred->value)
+            ->get()
+            ->map(fn (Purchase $purchase) => $this->toDto($purchase))
+            ->all();
+    }
+
     public function completePending(int|string $purchaseId, string $txId, array $response): PurchaseData
     {
         $purchase = Purchase::findOrFail($purchaseId);
