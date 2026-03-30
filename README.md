@@ -431,6 +431,115 @@ class NotificationController extends Controller
 }
 ```
 
+### Query Builder（DB ファサード）を使った実装例
+
+Eloquent モデルを使わず、`DB` ファサード（Query Builder）で Repository を実装することもできる。
+完全な実装は `docs/laravel/app/Services/Iap/QueryBuilderPurchaseRepository.php` を参照。
+
+```php
+use Fukazawa\Iap\Contracts\PurchaseRepositoryInterface;
+use Fukazawa\Iap\DTO\ProductData;
+use Fukazawa\Iap\DTO\PurchaseData;
+use Fukazawa\Iap\Enums\Platform;
+use Fukazawa\Iap\Enums\PurchaseStatus;
+use Fukazawa\Iap\Enums\PurchaseType;
+use Illuminate\Support\Facades\DB;
+
+class QueryBuilderPurchaseRepository implements PurchaseRepositoryInterface
+{
+    public function findProductByProductId(string $productId): ?ProductData
+    {
+        $row = DB::table('products')->where('product_id', $productId)->first();
+
+        if (! $row) {
+            return null;
+        }
+
+        return new ProductData(
+            id: $row->id,
+            productId: $row->product_id,
+            name: $row->name,
+            type: PurchaseType::from($row->type),
+            googleProductId: $row->google_product_id,
+            appleProductId: $row->apple_product_id,
+        );
+    }
+
+    public function createOrUpdateVerified(
+        int|string $userId,
+        int|string $productId,
+        Platform $platform,
+        string $txId,
+        string $token,
+        ?string $receipt,
+        array $response,
+    ): PurchaseData {
+        $existing = DB::table('purchases')
+            ->where('platform', $platform->value)
+            ->where('transaction_id', $txId)
+            ->first();
+
+        $data = [
+            'user_id' => $userId,
+            'product_id' => $productId,
+            'purchase_token' => $token,
+            'status' => PurchaseStatus::Verified->value,
+            'receipt_payload' => $receipt,
+            'store_response' => json_encode($response),
+            'verified_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        if ($existing) {
+            DB::table('purchases')->where('id', $existing->id)->update($data);
+            $id = $existing->id;
+        } else {
+            $id = DB::table('purchases')->insertGetId(array_merge($data, [
+                'platform' => $platform->value,
+                'transaction_id' => $txId,
+                'created_at' => now(),
+            ]));
+        }
+
+        return $this->toDto(DB::table('purchases')->find($id));
+    }
+
+    public function findAllPendingByPlatform(Platform $platform): array
+    {
+        $rows = DB::table('purchases')
+            ->where('platform', $platform->value)
+            ->where('status', PurchaseStatus::Deferred->value)
+            ->get();
+
+        return array_map(
+            fn (object $row) => $this->toDto($row),
+            $rows->all(),
+        );
+    }
+
+    public function transaction(callable $callback): mixed
+    {
+        return DB::transaction($callback);
+    }
+
+    // 他のメソッド（createFailed, markAcknowledged, findPendingByPlatformAndToken 等）も
+    // 同様のパターンで実装する。完全な実装例は docs/laravel/ を参照。
+    // ...
+}
+```
+
+ServiceProvider でバインディングを切り替えるだけで Eloquent 版と Query Builder 版を差し替えられる:
+
+```php
+// Eloquent 版
+$this->app->bind(PurchaseRepositoryInterface::class, EloquentPurchaseRepository::class);
+$this->app->bind(SubscriptionRepositoryInterface::class, EloquentSubscriptionRepository::class);
+
+// Query Builder 版
+$this->app->bind(PurchaseRepositoryInterface::class, QueryBuilderPurchaseRepository::class);
+$this->app->bind(SubscriptionRepositoryInterface::class, QueryBuilderSubscriptionRepository::class);
+```
+
 ## テスト
 
 ```bash
