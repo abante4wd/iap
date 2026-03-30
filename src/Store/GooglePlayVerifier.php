@@ -5,6 +5,7 @@ namespace Fukazawa\Iap\Store;
 use Fukazawa\Iap\Contracts\StoreVerifierInterface;
 use Fukazawa\Iap\DTO\SubscriptionInfo;
 use Fukazawa\Iap\DTO\VerificationResult;
+use Fukazawa\Iap\Enums\PendingReason;
 use Fukazawa\Iap\Store\Config\GoogleConfig;
 use Google\Client as GoogleClient;
 use Google\Service\AndroidPublisher;
@@ -34,6 +35,18 @@ class GooglePlayVerifier implements StoreVerifierInterface
             );
 
             $responseArray = $response->toSimpleObject() ? (array) $response->toSimpleObject() : [];
+
+            // purchaseState: 0=purchased, 1=canceled, 2=pending
+            if ($response->getPurchaseState() === 2) {
+                return new VerificationResult(
+                    isValid: false,
+                    transactionId: $response->getOrderId() ?? '',
+                    productId: $productId,
+                    rawResponse: $responseArray,
+                    isPending: true,
+                    pendingReason: PendingReason::PendingPayment,
+                );
+            }
 
             if ($response->getPurchaseState() !== 0) {
                 return new VerificationResult(

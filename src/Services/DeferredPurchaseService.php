@@ -1,0 +1,112 @@
+<?php
+
+namespace Fukazawa\Iap\Services;
+
+use Fukazawa\Iap\Contracts\PurchaseRepositoryInterface;
+use Fukazawa\Iap\Contracts\RewardGrantServiceInterface;
+use Fukazawa\Iap\DTO\PurchaseData;
+use Fukazawa\Iap\Enums\Platform;
+use Fukazawa\Iap\Enums\PurchaseType;
+use Fukazawa\Iap\Store\StoreVerifierFactory;
+
+class DeferredPurchaseService
+{
+    public function __construct(
+        private StoreVerifierFactory $verifierFactory,
+        private PurchaseRepositoryInterface $purchaseRepo,
+        private RewardGrantServiceInterface $rewardGrantService,
+    ) {}
+
+    /**
+     * 保留中の購入をストアに再検証し、承認済みなら完了させる
+     */
+    public function completePending(Platform $platform, string $purchaseToken): ?PurchaseData
+    {
+        $pending = $this->purchaseRepo->findPendingByPlatformAndToken($platform, $purchaseToken);
+        if (! $pending) {
+            return null;
+        }
+
+        $product = $this->purchaseRepo->findProductByProductId((string) $pending->productId);
+        if (! $product) {
+            return null;
+        }
+
+        $verifier = $this->verifierFactory->make($platform);
+        $storeProductId = $product->storeProductId($platform->value);
+
+        $isSubscription = $product->type === PurchaseType::Subscription;
+        $result = $isSubscription
+            ? $verifier->verifySubscription($storeProductId, $purchaseToken)
+            : $verifier->verifyProduct($storeProductId, $purchaseToken);
+
+        if (! $result->isValid) {
+            return null;
+        }
+
+        return $this->purchaseRepo->transaction(function () use ($pending, $result, $platform, $product, $purchaseToken, $verifier) {
+            $purchase = $this->purchaseRepo->completePending(
+                $pending->id,
+                $result->transactionId,
+                $result->rawResponse,
+            );
+
+            if ($platform === Platform::Google && $product->type === PurchaseType::Consumable) {
+                $acknowledged = $verifier->acknowledge($product->storeProductId($platform->value), $purchaseToken);
+                if ($acknowledged) {
+                    $this->purchaseRepo->markAcknowledged($purchase->id);
+                }
+            }
+
+            $rewards = $this->rewardGrantService->grant($purchase);
+            $this->purchaseRepo->markRewardsGranted($purchase->id);
+
+            return $purchase;
+        });
+    }
+
+    /**
+     * 保留中の購入をキャンセルする
+     */
+    public function cancelPending(Platform $platform, string $purchaseToken, ?string $reason = null): void
+    {
+        $pending = $this->purchaseRepo->findPendingByPlatformAndToken($platform, $purchaseToken);
+        if (! $pending) {
+            return;
+        }
+
+        $this->purchaseRepo->cancelPending($pending->id, $reason);
+    }
+
+    /**
+     * すべての保留中の購入を再検証する（バッチ処理用）
+     *
+     * @return array{completed: int, still_pending: int, failed: int}
+     */
+    public function recheckPendingPurchases(): array
+    {
+        $stats = ['completed' => 0, 'still_pending' => 0, 'failed' => 0];
+
+        foreach ([Platform::Google, Platform::Apple] as $platform) {
+            $token = '';
+            while (true) {
+                $pending = $this->purchaseRepo->findPendingByPlatformAndToken($platform, $token);
+                if (! $pending) {
+                    break;
+                }
+
+                $result = $this->completePending($platform, $pending->purchaseToken);
+                if ($result) {
+                    $stats['completed']++;
+                } else {
+                    $stats['still_pending']++;
+                }
+
+                // 同じトークンで無限ループしないようにbreak
+                break;
+            }
+        }
+
+        return $stats;
+    }
+}

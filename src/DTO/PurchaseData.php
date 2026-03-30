@@ -2,6 +2,7 @@
 
 namespace Fukazawa\Iap\DTO;
 
+use Fukazawa\Iap\Enums\PendingReason;
 use Fukazawa\Iap\Enums\Platform;
 use Fukazawa\Iap\Enums\PurchaseStatus;
 
@@ -20,5 +21,8 @@ readonly class PurchaseData
         public ?\DateTimeImmutable $verifiedAt = null,
         public ?\DateTimeImmutable $acknowledgedAt = null,
         public ?\DateTimeImmutable $rewardsGrantedAt = null,
+        public ?PendingReason $pendingReason = null,
+        public ?\DateTimeImmutable $deferredAt = null,
+        public ?\DateTimeImmutable $completedAt = null,
     ) {}
 }

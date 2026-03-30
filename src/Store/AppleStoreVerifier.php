@@ -6,6 +6,7 @@ use Firebase\JWT\JWT;
 use Fukazawa\Iap\Contracts\StoreVerifierInterface;
 use Fukazawa\Iap\DTO\SubscriptionInfo;
 use Fukazawa\Iap\DTO\VerificationResult;
+use Fukazawa\Iap\Enums\PendingReason;
 use Fukazawa\Iap\Store\Config\AppleConfig;
 use GuzzleHttp\Client;
 
@@ -26,14 +27,14 @@ class AppleStoreVerifier implements StoreVerifierInterface
         $this->httpClient = $httpClient ?? new Client;
     }
 
-    public function verifyProduct(string $productId, string $purchaseToken, ?string $receiptData = null): VerificationResult
+    public function verifyProduct(string $productId, string $purchaseToken, ?string $receiptData = null, ?bool $clientReportsPending = null): VerificationResult
     {
-        return $this->verifyTransaction($productId, $purchaseToken);
+        return $this->verifyTransaction($productId, $purchaseToken, clientReportsPending: $clientReportsPending);
     }
 
-    public function verifySubscription(string $productId, string $purchaseToken, ?string $receiptData = null): VerificationResult
+    public function verifySubscription(string $productId, string $purchaseToken, ?string $receiptData = null, ?bool $clientReportsPending = null): VerificationResult
     {
-        return $this->verifyTransaction($productId, $purchaseToken, isSubscription: true);
+        return $this->verifyTransaction($productId, $purchaseToken, isSubscription: true, clientReportsPending: $clientReportsPending);
     }
 
     public function acknowledge(string $productId, string $purchaseToken): bool
@@ -41,7 +42,7 @@ class AppleStoreVerifier implements StoreVerifierInterface
         return true;
     }
 
-    private function verifyTransaction(string $productId, string $transactionId, bool $isSubscription = false): VerificationResult
+    private function verifyTransaction(string $productId, string $transactionId, bool $isSubscription = false, ?bool $clientReportsPending = null): VerificationResult
     {
         try {
             $token = $this->generateJwt();
@@ -60,6 +61,18 @@ class AppleStoreVerifier implements StoreVerifierInterface
             $responseData = json_decode($response->getBody()->getContents(), true) ?? [];
 
             if ($statusCode < 200 || $statusCode >= 300) {
+                // 404: トランザクションが見つからない場合、Ask to Buy で承認待ちの可能性がある
+                if ($statusCode === 404 && $clientReportsPending === true) {
+                    return new VerificationResult(
+                        isValid: false,
+                        transactionId: $transactionId,
+                        productId: $productId,
+                        rawResponse: $responseData,
+                        isPending: true,
+                        pendingReason: PendingReason::AskToBuy,
+                    );
+                }
+
                 return new VerificationResult(
                     isValid: false,
                     transactionId: $transactionId,
@@ -90,6 +103,17 @@ class AppleStoreVerifier implements StoreVerifierInterface
                     productId: $productId,
                     rawResponse: $responseData,
                     errorMessage: 'Bundle ID mismatch',
+                );
+            }
+
+            // revocationReason が存在する場合は取り消し済み
+            if (isset($transactionPayload['revocationReason'])) {
+                return new VerificationResult(
+                    isValid: false,
+                    transactionId: (string) ($transactionPayload['transactionId'] ?? $transactionId),
+                    productId: $transactionPayload['productId'] ?? $productId,
+                    rawResponse: $responseData,
+                    errorMessage: 'Transaction has been revoked: reason='.$transactionPayload['revocationReason'],
                 );
             }
 

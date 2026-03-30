@@ -7,6 +7,7 @@ namespace App;
 use Fukazawa\Iap\Contracts\PurchaseRepositoryInterface;
 use Fukazawa\Iap\DTO\ProductData;
 use Fukazawa\Iap\DTO\PurchaseData;
+use Fukazawa\Iap\Enums\PendingReason;
 use Fukazawa\Iap\Enums\Platform;
 use Fukazawa\Iap\Enums\PurchaseStatus;
 use Fukazawa\Iap\Enums\PurchaseType;
@@ -121,6 +122,103 @@ class InMemoryPurchaseRepository implements PurchaseRepositoryInterface
     public function markRewardsGranted(int|string $purchaseId): void
     {
         echo "  [PurchaseRepo] Purchase #{$purchaseId} rewards granted\n";
+    }
+
+    public function createOrUpdatePending(
+        int|string $userId,
+        int|string $productId,
+        Platform $platform,
+        string $txId,
+        string $token,
+        ?string $receipt,
+        array $response,
+        PendingReason $reason,
+    ): PurchaseData {
+        $purchase = new PurchaseData(
+            id: $this->nextId++,
+            userId: $userId,
+            productId: $productId,
+            platform: $platform,
+            storeTransactionId: $txId,
+            purchaseToken: $token,
+            status: PurchaseStatus::Deferred,
+            receiptPayload: $receipt,
+            storeResponse: $response,
+            pendingReason: $reason,
+            deferredAt: new \DateTimeImmutable,
+        );
+
+        $this->purchases[$purchase->id] = $purchase;
+        echo "  [PurchaseRepo] Purchase #{$purchase->id} created as pending ({$reason->value})\n";
+
+        return $purchase;
+    }
+
+    public function findPendingByPlatformAndToken(Platform $platform, string $token): ?PurchaseData
+    {
+        foreach ($this->purchases as $purchase) {
+            if ($purchase->platform === $platform
+                && $purchase->purchaseToken === $token
+                && $purchase->status === PurchaseStatus::Deferred) {
+                return $purchase;
+            }
+        }
+
+        return null;
+    }
+
+    public function completePending(int|string $purchaseId, string $txId, array $response): PurchaseData
+    {
+        $existing = $this->purchases[$purchaseId] ?? null;
+        if (! $existing) {
+            throw new \RuntimeException("Purchase #{$purchaseId} not found");
+        }
+
+        $purchase = new PurchaseData(
+            id: $existing->id,
+            userId: $existing->userId,
+            productId: $existing->productId,
+            platform: $existing->platform,
+            storeTransactionId: $txId,
+            purchaseToken: $existing->purchaseToken,
+            status: PurchaseStatus::Verified,
+            receiptPayload: $existing->receiptPayload,
+            storeResponse: $response,
+            verifiedAt: new \DateTimeImmutable,
+            pendingReason: $existing->pendingReason,
+            deferredAt: $existing->deferredAt,
+            completedAt: new \DateTimeImmutable,
+        );
+
+        $this->purchases[$purchaseId] = $purchase;
+        echo "  [PurchaseRepo] Purchase #{$purchaseId} completed (was pending)\n";
+
+        return $purchase;
+    }
+
+    public function cancelPending(int|string $purchaseId, ?string $reason = null): void
+    {
+        $existing = $this->purchases[$purchaseId] ?? null;
+        if (! $existing) {
+            return;
+        }
+
+        $purchase = new PurchaseData(
+            id: $existing->id,
+            userId: $existing->userId,
+            productId: $existing->productId,
+            platform: $existing->platform,
+            storeTransactionId: $existing->storeTransactionId,
+            purchaseToken: $existing->purchaseToken,
+            status: PurchaseStatus::Cancelled,
+            receiptPayload: $existing->receiptPayload,
+            storeResponse: $existing->storeResponse,
+            pendingReason: $existing->pendingReason,
+            deferredAt: $existing->deferredAt,
+        );
+
+        $this->purchases[$purchaseId] = $purchase;
+        echo "  [PurchaseRepo] Purchase #{$purchaseId} cancelled".($reason ? " (reason: {$reason})" : '')."\n";
     }
 
     public function transaction(callable $callback): mixed

@@ -4,6 +4,7 @@ namespace Fukazawa\Iap\Contracts;
 
 use Fukazawa\Iap\DTO\ProductData;
 use Fukazawa\Iap\DTO\PurchaseData;
+use Fukazawa\Iap\Enums\PendingReason;
 use Fukazawa\Iap\Enums\Platform;
 
 interface PurchaseRepositoryInterface
@@ -35,6 +36,23 @@ interface PurchaseRepositoryInterface
     public function markAcknowledged(int|string $purchaseId): void;
 
     public function markRewardsGranted(int|string $purchaseId): void;
+
+    public function createOrUpdatePending(
+        int|string $userId,
+        int|string $productId,
+        Platform $platform,
+        string $txId,
+        string $token,
+        ?string $receipt,
+        array $response,
+        PendingReason $reason,
+    ): PurchaseData;
+
+    public function findPendingByPlatformAndToken(Platform $platform, string $token): ?PurchaseData;
+
+    public function completePending(int|string $purchaseId, string $txId, array $response): PurchaseData;
+
+    public function cancelPending(int|string $purchaseId, ?string $reason = null): void;
 
     public function transaction(callable $callback): mixed;
 }

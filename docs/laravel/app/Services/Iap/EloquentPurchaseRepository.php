@@ -9,6 +9,7 @@ use App\Models\Purchase;
 use Fukazawa\Iap\Contracts\PurchaseRepositoryInterface;
 use Fukazawa\Iap\DTO\ProductData;
 use Fukazawa\Iap\DTO\PurchaseData;
+use Fukazawa\Iap\Enums\PendingReason;
 use Fukazawa\Iap\Enums\Platform;
 use Fukazawa\Iap\Enums\PurchaseStatus;
 use Fukazawa\Iap\Enums\PurchaseType;
@@ -109,6 +110,71 @@ class EloquentPurchaseRepository implements PurchaseRepositoryInterface
         Purchase::where('id', $purchaseId)->update(['rewards_granted_at' => now()]);
     }
 
+    public function createOrUpdatePending(
+        int|string $userId,
+        int|string $productId,
+        Platform $platform,
+        string $txId,
+        string $token,
+        ?string $receipt,
+        array $response,
+        PendingReason $reason,
+    ): PurchaseData {
+        $purchase = Purchase::updateOrCreate(
+            [
+                'platform' => $platform->value,
+                'purchase_token' => $token,
+                'status' => PurchaseStatus::Deferred->value,
+            ],
+            [
+                'user_id' => $userId,
+                'product_id' => $productId,
+                'transaction_id' => $txId,
+                'receipt_payload' => $receipt,
+                'store_response' => $response,
+                'pending_reason' => $reason->value,
+                'deferred_at' => now(),
+            ],
+        );
+
+        return $this->toDto($purchase);
+    }
+
+    public function findPendingByPlatformAndToken(Platform $platform, string $token): ?PurchaseData
+    {
+        $purchase = Purchase::where('platform', $platform->value)
+            ->where('purchase_token', $token)
+            ->where('status', PurchaseStatus::Deferred->value)
+            ->first();
+
+        if (! $purchase) {
+            return null;
+        }
+
+        return $this->toDto($purchase);
+    }
+
+    public function completePending(int|string $purchaseId, string $txId, array $response): PurchaseData
+    {
+        $purchase = Purchase::findOrFail($purchaseId);
+        $purchase->update([
+            'transaction_id' => $txId,
+            'status' => PurchaseStatus::Verified->value,
+            'store_response' => $response,
+            'verified_at' => now(),
+            'completed_at' => now(),
+        ]);
+
+        return $this->toDto($purchase->refresh());
+    }
+
+    public function cancelPending(int|string $purchaseId, ?string $reason = null): void
+    {
+        Purchase::where('id', $purchaseId)->update([
+            'status' => PurchaseStatus::Cancelled->value,
+        ]);
+    }
+
     public function transaction(callable $callback): mixed
     {
         return DB::transaction($callback);
@@ -129,6 +195,9 @@ class EloquentPurchaseRepository implements PurchaseRepositoryInterface
             verifiedAt: $purchase->verified_at ? \DateTimeImmutable::createFromMutable($purchase->verified_at) : null,
             acknowledgedAt: $purchase->acknowledged_at ? \DateTimeImmutable::createFromMutable($purchase->acknowledged_at) : null,
             rewardsGrantedAt: $purchase->rewards_granted_at ? \DateTimeImmutable::createFromMutable($purchase->rewards_granted_at) : null,
+            pendingReason: $purchase->pending_reason ? PendingReason::from($purchase->pending_reason) : null,
+            deferredAt: $purchase->deferred_at ? \DateTimeImmutable::createFromMutable($purchase->deferred_at) : null,
+            completedAt: $purchase->completed_at ? \DateTimeImmutable::createFromMutable($purchase->completed_at) : null,
         );
     }
 }

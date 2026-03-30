@@ -23,7 +23,7 @@ class PurchaseVerificationService
     ) {}
 
     /**
-     * @return array{purchase: PurchaseData, rewards: array}
+     * @return array{purchase: PurchaseData, rewards: array, status?: string}
      *
      * @throws StoreVerificationFailedException
      * @throws PurchaseAlreadyVerifiedException
@@ -48,6 +48,26 @@ class PurchaseVerificationService
         $result = $isSubscription
             ? $verifier->verifySubscription($storeProductId, $purchaseToken, $receiptData)
             : $verifier->verifyProduct($storeProductId, $purchaseToken, $receiptData);
+
+        // 保留中の購入（Ask to Buy、支払い保留など）
+        if ($result->isPending) {
+            $purchase = $this->purchaseRepo->createOrUpdatePending(
+                $userId,
+                $product->id,
+                $platform,
+                $result->transactionId ?: 'pending_'.uniqid(),
+                $purchaseToken,
+                $receiptData,
+                $result->rawResponse,
+                $result->pendingReason ?? \Fukazawa\Iap\Enums\PendingReason::Unknown,
+            );
+
+            return [
+                'purchase' => $purchase,
+                'rewards' => [],
+                'status' => 'pending',
+            ];
+        }
 
         if (! $result->isValid) {
             $purchase = $this->purchaseRepo->createFailed(

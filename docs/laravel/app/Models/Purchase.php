@@ -20,6 +20,9 @@ class Purchase extends Model
         'verified_at',
         'acknowledged_at',
         'rewards_granted_at',
+        'pending_reason',
+        'deferred_at',
+        'completed_at',
     ];
 
     protected function casts(): array
@@ -29,6 +32,8 @@ class Purchase extends Model
             'verified_at' => 'datetime',
             'acknowledged_at' => 'datetime',
             'rewards_granted_at' => 'datetime',
+            'deferred_at' => 'datetime',
+            'completed_at' => 'datetime',
         ];
     }
 
