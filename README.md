@@ -86,6 +86,7 @@ src/
 ├── DTO/                # データ転送オブジェクト
 ├── Enums/              # 列挙型
 ├── Exceptions/         # 例外
+├── Notifications/      # サーバー通知ハンドラー（Google / Apple）
 ├── Services/           # ビジネスロジック
 └── Store/              # ストア検証（Google / Apple）
     └── Config/         # 設定 DTO
@@ -199,6 +200,62 @@ $result = $checker->checkExpiring(
 // $result => ['checked' => 10, 'updated' => 8, 'errors' => 0]
 ```
 
+### 6. DeferredPurchaseService（保留購入の処理）
+
+Apple の Ask to Buy や Google Play の支払い保留など、保留中の購入を処理する。
+
+```php
+use Fukazawa\Iap\Services\DeferredPurchaseService;
+use Fukazawa\Iap\Enums\Platform;
+
+$deferredService = new DeferredPurchaseService(
+    verifierFactory: $factory,
+    purchaseRepo: $myPurchaseRepository,
+    rewardGrantService: $myRewardGrantService,
+);
+
+// 保留中の購入をストアに再検証し、承認済みなら完了させる
+$purchase = $deferredService->completePending(Platform::Google, $purchaseToken);
+// $purchase => PurchaseData|null（null の場合は未承認または該当なし）
+
+// 保留中の購入をキャンセルする
+$deferredService->cancelPending(Platform::Google, $purchaseToken, '理由');
+```
+
+### 7. サーバー通知ハンドラー
+
+ストアからのサーバー通知（Webhook）を処理するハンドラー。
+`ServerNotificationHandlerInterface` を実装し、`handle()` メソッドで通知ペイロードを受け取る。
+
+```php
+use Fukazawa\Iap\Notifications\GooglePlayNotificationHandler;
+use Fukazawa\Iap\Notifications\AppleServerNotificationHandler;
+
+// Google Play Real-time Developer Notifications (RTDN)
+$googleHandler = new GooglePlayNotificationHandler($deferredService);
+$result = $googleHandler->handle($requestBody);
+
+// Apple App Store Server Notifications V2
+$appleHandler = new AppleServerNotificationHandler($deferredService);
+$result = $appleHandler->handle($requestBody);
+
+// 戻り値: array{type: string, action: string, details: array}
+// 例: ['type' => 'ONE_TIME_PRODUCT_PURCHASED', 'action' => 'completed', 'details' => [...]]
+```
+
+**対応する通知タイプ:**
+
+| ハンドラー | 通知タイプ | アクション |
+|---|---|---|
+| Google | `oneTimeProductNotification` (type=1) | 保留購入を完了 |
+| Google | `oneTimeProductNotification` (type=2) | 保留購入をキャンセル |
+| Google | `subscriptionNotification` | サブスク更新を記録 |
+| Google | `voidedPurchaseNotification` | 購入をキャンセル |
+| Apple | `ONE_TIME_CHARGE` (ACCEPTED) | 保留購入を完了 |
+| Apple | `ONE_TIME_CHARGE` (DECLINED) | 保留購入をキャンセル |
+| Apple | `REVOKE` | 購入をキャンセル |
+| Apple | `SUBSCRIBED` / `DID_RENEW` 等 | サブスク更新を記録 |
+
 ## ホストアプリが実装するインターフェース
 
 ### PurchaseRepositoryInterface
@@ -216,6 +273,10 @@ class MyPurchaseRepository implements PurchaseRepositoryInterface
     public function createOrUpdateVerified(...): PurchaseData { ... }
     public function markAcknowledged(int|string $purchaseId): void { ... }
     public function markRewardsGranted(int|string $purchaseId): void { ... }
+    public function createOrUpdatePending(...): PurchaseData { ... }        // 保留購入の作成・更新
+    public function findPendingByPlatformAndToken(Platform $platform, string $token): ?PurchaseData { ... }
+    public function completePending(int|string $purchaseId, string $txId, array $response): PurchaseData { ... }
+    public function cancelPending(int|string $purchaseId, ?string $reason = null): void { ... }
     public function transaction(callable $callback): mixed { ... }
 }
 ```
@@ -249,22 +310,39 @@ class MyRewardGrantService implements RewardGrantServiceInterface
 }
 ```
 
+### ServerNotificationHandlerInterface
+
+ストアからのサーバー通知を処理するインターフェース。
+
+```php
+use Fukazawa\Iap\Contracts\ServerNotificationHandlerInterface;
+
+class MyNotificationHandler implements ServerNotificationHandlerInterface
+{
+    /** @return array{type: string, action: string, details: array} */
+    public function handle(string $payload): array { ... }
+}
+```
+
+パッケージには `GooglePlayNotificationHandler` と `AppleServerNotificationHandler` が組み込み実装として含まれている。
+
 ## DTO 一覧
 
 | クラス | 用途 |
 |---|---|
 | `ProductData` | 商品マスタ情報。`storeProductId($platform)` でストア別商品 ID を取得 |
-| `PurchaseData` | 購入トランザクション記録 |
+| `PurchaseData` | 購入トランザクション記録（`pendingReason`, `deferredAt`, `completedAt` を含む） |
 | `SubscriptionData` | サブスクリプション状態（期限切れ検査用） |
 | `SubscriptionInfo` | ストア API から取得したサブスクリプション情報 |
-| `VerificationResult` | ストア API 検証結果 |
+| `VerificationResult` | ストア API 検証結果（`isPending`, `pendingReason` を含む） |
 
 ## Enum 一覧
 
 | Enum | 値 |
 |---|---|
 | `Platform` | `google`, `apple` |
-| `PurchaseStatus` | `pending`, `verified`, `failed`, `refunded` |
+| `PurchaseStatus` | `pending`, `deferred`, `verified`, `failed`, `cancelled`, `refunded` |
+| `PendingReason` | `ask_to_buy`, `pending_payment`, `unknown` |
 | `PurchaseType` | `consumable`, `non_consumable`, `subscription` |
 | `SubscriptionStatus` | `active`, `expired`, `cancelled`, `grace_period`, `paused` |
 
@@ -328,6 +406,43 @@ class PurchaseController extends Controller
 }
 ```
 
+サーバー通知の受信エンドポイントも追加する:
+
+```php
+// routes/api.php
+Route::post('/notifications/apple', [NotificationController::class, 'apple']);
+Route::post('/notifications/google', [NotificationController::class, 'google']);
+```
+
+```php
+class NotificationController extends Controller
+{
+    public function google(Request $request, GooglePlayNotificationHandler $handler): JsonResponse
+    {
+        $result = $handler->handle($request->getContent());
+        return response()->json($result);
+    }
+
+    public function apple(Request $request, AppleServerNotificationHandler $handler): JsonResponse
+    {
+        $result = $handler->handle($request->getContent());
+        return response()->json($result);
+    }
+}
+```
+
+## テスト
+
+```bash
+vendor/bin/phpunit
+```
+
+30 件のユニットテストが含まれており、サービス層・通知ハンドラー・ファクトリをカバーしている。
+
+### CI
+
+GitHub Actions で PHP 8.2 / 8.3 / 8.4 に対して、`main` ブランチへの push / PR 時にテストが自動実行される。
+
 ## 依存関係
 
 - `guzzlehttp/guzzle` ^7.0 — Apple App Store API の HTTP 通信
@@ -335,3 +450,19 @@ class PurchaseController extends Controller
 - `google/apiclient` ^2.18 — Google Play Android Publisher API
 
 **illuminate/* への依存は一切ない。**
+
+## 公式ドキュメント
+
+### Google Play
+
+- [Google Play Developer API - 購入検証](https://developer.android.com/google/play/billing/integrate#verify)
+- [Android Publisher API リファレンス](https://developers.google.com/android-publisher/api-ref/rest)
+- [Real-time Developer Notifications (RTDN)](https://developer.android.com/google/play/billing/getting-ready#configure-rtdn)
+- [サーバーサイド購入検証](https://developer.android.com/google/play/billing/security#verify)
+
+### Apple App Store
+
+- [App Store Server API](https://developer.apple.com/documentation/appstoreserverapi)
+- [App Store Server Notifications V2](https://developer.apple.com/documentation/appstoreservernotifications)
+- [JWS トランザクション情報](https://developer.apple.com/documentation/appstoreserverapi/jwstransaction)
+- [In-App Purchase サーバーサイド検証](https://developer.apple.com/documentation/storekit/in-app_purchase/original_api_for_in-app_purchase/validating_receipts_with_the_app_store)
