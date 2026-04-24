@@ -1,2 +1,7 @@
 /vendor/
 composer.lock
+.env*
+!.env.example
+*.key
+*.pem
+*.p8
