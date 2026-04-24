@@ -2,7 +2,7 @@
 
 namespace Abante4wd\Iap\Store;
 
-class AppleJwsVerifier
+final class AppleJwsVerifier
 {
     /**
      * Apple Root CA - G3 の PEM 証明書。
@@ -44,7 +44,12 @@ PEM;
         [$headerB64, $payloadB64, $signatureB64] = $parts;
 
         $header = json_decode(base64_decode(strtr($headerB64, '-_', '+/')), true);
-        if (! is_array($header) || ! isset($header['x5c']) || count($header['x5c']) < 3) {
+        if (
+            ! is_array($header)
+            || ! isset($header['x5c'])
+            || ! is_array($header['x5c'])
+            || count($header['x5c']) < 3
+        ) {
             throw new \RuntimeException('Invalid certificate chain in JWS header');
         }
 

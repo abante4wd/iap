@@ -47,4 +47,14 @@ class AppleJwsVerifierTest extends TestCase
         $this->expectExceptionMessage('Invalid certificate chain in JWS header');
         $this->verifier->verify($header . '.' . $payload . '.sig');
     }
+
+    public function test_verify_throws_for_x5c_not_array(): void
+    {
+        $header = rtrim(strtr(base64_encode(json_encode(['alg' => 'ES256', 'x5c' => 'not-an-array'])), '+/', '-_'), '=');
+        $payload = rtrim(strtr(base64_encode(json_encode(['foo' => 'bar'])), '+/', '-_'), '=');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Invalid certificate chain in JWS header');
+        $this->verifier->verify($header . '.' . $payload . '.sig');
+    }
 }
