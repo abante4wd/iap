@@ -558,7 +558,7 @@ $this->app->bind(SubscriptionRepositoryInterface::class, QueryBuilderSubscriptio
 vendor/bin/phpunit
 ```
 
-64 件のユニットテストが含まれており、サービス層・通知ハンドラー・ファクトリをカバーしている。
+72 件のユニットテストが含まれており、サービス層・通知ハンドラー・ファクトリをカバーしている。
 
 ### CI
 
