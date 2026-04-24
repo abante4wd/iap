@@ -1,6 +1,6 @@
-# fukazawa/iap - Laravel Integration Guide
+# abante4wd/iap - Laravel Integration Guide
 
-`fukazawa/iap` パッケージを Laravel プロジェクトに導入するためのサンプルファイル集です。
+`abante4wd/iap` パッケージを Laravel プロジェクトに導入するためのサンプルファイル集です。
 
 ## ディレクトリ構成
 
@@ -37,7 +37,7 @@ docs/laravel/
 ### 1. パッケージをインストール
 
 ```bash
-composer require fukazawa/iap
+composer require abante4wd/iap
 ```
 
 プライベートリポジトリの場合は `composer.json` に `repositories` を追加:
@@ -47,7 +47,7 @@ composer require fukazawa/iap
     "repositories": [
         {
             "type": "vcs",
-            "url": "git@github.com:fukazawa/iap.git"
+            "url": "git@github.com:abante4wd/iap.git"
         }
     ]
 }
@@ -86,7 +86,7 @@ your-laravel-project/
 3. パッケージをインストールします:
 
 ```bash
-composer require fukazawa/iap:*
+composer require abante4wd/iap:*
 ```
 
 ### 2. ファイルをコピー
