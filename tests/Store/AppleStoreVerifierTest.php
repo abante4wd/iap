@@ -146,18 +146,86 @@ class AppleStoreVerifierTest extends TestCase
         $this->assertFalse($result->isValid);
         $this->assertStringContainsString('signature', $result->errorMessage);
     }
+
+    public function test_verifySubscription_reads_autoRenewStatus_from_renewalInfo(): void
+    {
+        $transactionId = '111222333';
+        $inputJws = $this->makeJws(['transactionId' => $transactionId]);
+
+        $transactionPayload = [
+            'transactionId' => $transactionId,
+            'originalTransactionId' => $transactionId,
+            'productId' => 'com.example.myapp.premium',
+            'bundleId' => 'com.example.myapp',
+            'purchaseDate' => 1700000000000,
+            'expiresDate' => (time() + 3600) * 1000,
+            'environment' => 'Sandbox',
+        ];
+        $renewalPayload = [
+            'autoRenewStatus' => 0,   // 自動更新オフ
+            'isInBillingRetryPeriod' => true,
+        ];
+        $signedTransactionInfo = $this->makeJws($transactionPayload);
+        $signedRenewalInfo = $this->makeJws($renewalPayload);
+
+        $httpClient = $this->makeMockHttpClient(200, [
+            'signedTransactionInfo' => $signedTransactionInfo,
+            'signedRenewalInfo' => $signedRenewalInfo,
+        ]);
+
+        $verifier = new TestableAppleStoreVerifier($this->configWithKey, $httpClient);
+        $verifier->jwsPayloads = [
+            $signedTransactionInfo => $transactionPayload,
+            $signedRenewalInfo => $renewalPayload,
+        ];
+
+        $result = $verifier->verifySubscription('prod1', $inputJws);
+
+        $this->assertTrue($result->isValid);
+        $this->assertNotNull($result->subscriptionInfo);
+        $this->assertFalse($result->subscriptionInfo->autoRenewing);
+        $this->assertTrue($result->subscriptionInfo->isInBillingRetry);
+    }
+
+    public function test_verifyProduct_returns_invalid_on_environment_mismatch(): void
+    {
+        $transactionId = '777888999';
+        $inputJws = $this->makeJws(['transactionId' => $transactionId]);
+
+        $transactionPayload = [
+            'transactionId' => $transactionId,
+            'productId' => 'com.example.myapp.gem100',
+            'bundleId' => 'com.example.myapp',
+            'environment' => 'Production',  // config は 'sandbox' なのでミスマッチ
+        ];
+        $signedTransactionInfo = $this->makeJws($transactionPayload);
+
+        $httpClient = $this->makeMockHttpClient(200, ['signedTransactionInfo' => $signedTransactionInfo]);
+
+        $verifier = new TestableAppleStoreVerifier($this->configWithKey, $httpClient);
+        $verifier->jwsPayloads = [$signedTransactionInfo => $transactionPayload];
+
+        $result = $verifier->verifyProduct('prod1', $inputJws);
+
+        $this->assertFalse($result->isValid);
+        $this->assertStringContainsString('Environment mismatch', $result->errorMessage);
+    }
 }
 
 class TestableAppleStoreVerifier extends AppleStoreVerifier
 {
     public ?array $jwsPayloadToReturn = null;
+    /** @var array<string, array> JWSトークン => デコード済みペイロード のマップ */
+    public array $jwsPayloads = [];
     public bool $throwOnVerify = false;
 
     protected function verifyJwsSignature(string $jws): array
     {
-        // $jws is intentionally ignored; the payload is stubbed for testing
         if ($this->throwOnVerify) {
             throw new \RuntimeException('JWS signature verification failed');
+        }
+        if (isset($this->jwsPayloads[$jws])) {
+            return $this->jwsPayloads[$jws];
         }
         return $this->jwsPayloadToReturn ?? [];
     }

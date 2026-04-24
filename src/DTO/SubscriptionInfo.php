@@ -25,5 +25,7 @@ readonly class SubscriptionInfo
         public \DateTimeImmutable $expiresAt,
         public bool $autoRenewing,
         public string $status,
+        public bool $isInBillingRetry = false,
+        public ?\DateTimeImmutable $gracePeriodExpiresAt = null,
     ) {}
 }

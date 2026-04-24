@@ -146,6 +146,29 @@ class AppleStoreVerifier implements StoreVerifierInterface
 
             $transactionPayload = $this->verifyJwsSignature($signedTransaction);
 
+            // environment 検証
+            $expectedEnv = $this->config->environment === 'production' ? 'Production' : 'Sandbox';
+            if (isset($transactionPayload['environment']) && $transactionPayload['environment'] !== $expectedEnv) {
+                return new VerificationResult(
+                    isValid: false,
+                    transactionId: $transactionId,
+                    productId: $productId,
+                    rawResponse: $responseData,
+                    errorMessage: 'Environment mismatch: expected ' . $expectedEnv . ', got ' . $transactionPayload['environment'],
+                );
+            }
+
+            // signedRenewalInfo をデコード（存在する場合のみ）
+            $renewalPayload = null;
+            $signedRenewalInfo = $responseData['signedRenewalInfo'] ?? null;
+            if ($signedRenewalInfo !== null) {
+                try {
+                    $renewalPayload = $this->verifyJwsSignature($signedRenewalInfo);
+                } catch (\Exception) {
+                    // renewalInfo の検証失敗はトランザクション検証を妨げない
+                }
+            }
+
             if ($transactionPayload['bundleId'] !== $this->config->bundleId) {
                 return new VerificationResult(
                     isValid: false,
@@ -177,14 +200,24 @@ class AppleStoreVerifier implements StoreVerifierInterface
                 $purchaseDateMs = $transactionPayload['originalPurchaseDate']
                     ?? $transactionPayload['purchaseDate'];
 
+                $autoRenewing = isset($renewalPayload['autoRenewStatus'])
+                    ? ($renewalPayload['autoRenewStatus'] === 1)
+                    : true;
+                $isInBillingRetry = (bool) ($renewalPayload['isInBillingRetryPeriod'] ?? false);
+                $gracePeriodMs = $renewalPayload['gracePeriodExpiresDate'] ?? null;
+                $gracePeriodExpiresAt = $gracePeriodMs !== null
+                    ? (new \DateTimeImmutable)->setTimestamp((int) ($gracePeriodMs / 1000))
+                    : null;
+
                 $subscriptionInfo = new SubscriptionInfo(
                     originalTransactionId: (string) ($transactionPayload['originalTransactionId'] ?? $transactionId),
                     currentTransactionId: (string) ($transactionPayload['transactionId'] ?? $transactionId),
                     startsAt: (new \DateTimeImmutable)->setTimestamp((int) ($purchaseDateMs / 1000)),
                     expiresAt: $expiresAt,
-                    // expirationIntent が存在する場合は自動更新が無効化されている
-                    autoRenewing: ! isset($transactionPayload['expirationIntent']),
+                    autoRenewing: $autoRenewing,
                     status: $expiresAt > new \DateTimeImmutable ? 'active' : 'expired',
+                    isInBillingRetry: $isInBillingRetry,
+                    gracePeriodExpiresAt: $gracePeriodExpiresAt,
                 );
             }
 
