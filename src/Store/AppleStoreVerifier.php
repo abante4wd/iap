@@ -241,6 +241,147 @@ class AppleStoreVerifier implements StoreVerifierInterface
     }
 
     /**
+     * Apple Subscriptions API でサブスクリプション最新状態を取得する。
+     *
+     * `/inApps/v1/subscriptions/{originalTransactionId}` を呼び出し、
+     * 最新トランザクションの JWS を検証して SubscriptionInfo を構築する。
+     *
+     * @param string $originalTransactionId 元のトランザクション ID
+     * @param string $productId             商品 ID
+     * @return VerificationResult 検証結果
+     */
+    public function refreshSubscriptionStatus(string $originalTransactionId, string $productId): VerificationResult
+    {
+        try {
+            $token = $this->generateJwt();
+
+            $response = $this->httpClient->get(
+                "{$this->baseUrl}/inApps/v1/subscriptions/{$originalTransactionId}",
+                [
+                    'headers' => ['Authorization' => "Bearer {$token}"],
+                    'http_errors' => false,
+                ],
+            );
+
+            $statusCode = $response->getStatusCode();
+            $responseData = json_decode($response->getBody()->getContents(), true) ?? [];
+
+            if ($statusCode < 200 || $statusCode >= 300) {
+                return new VerificationResult(
+                    isValid: false,
+                    transactionId: $originalTransactionId,
+                    productId: $productId,
+                    rawResponse: $responseData,
+                    errorMessage: 'Apple Subscriptions API returned status: ' . $statusCode,
+                );
+            }
+
+            $lastTx = $this->findLastTransaction($responseData, $originalTransactionId);
+            if ($lastTx === null) {
+                return new VerificationResult(
+                    isValid: false,
+                    transactionId: $originalTransactionId,
+                    productId: $productId,
+                    rawResponse: $responseData,
+                    errorMessage: 'No matching transaction found in subscription response',
+                );
+            }
+
+            // status: 1=Active, 2=Expired, 3=BillingRetry, 4=GracePeriod, 5=Revoked
+            $txStatus = (int) ($lastTx['status'] ?? 0);
+            $isValid = in_array($txStatus, [1, 3, 4], true);
+
+            $transactionPayload = $this->verifyJwsSignature($lastTx['signedTransactionInfo']);
+
+            if ($transactionPayload['bundleId'] !== $this->config->bundleId) {
+                return new VerificationResult(
+                    isValid: false,
+                    transactionId: $originalTransactionId,
+                    productId: $productId,
+                    rawResponse: $responseData,
+                    errorMessage: 'Bundle ID mismatch',
+                );
+            }
+
+            $renewalPayload = null;
+            if (isset($lastTx['signedRenewalInfo'])) {
+                try {
+                    $renewalPayload = $this->verifyJwsSignature($lastTx['signedRenewalInfo']);
+                } catch (\Exception) {
+                    // renewalInfo の検証失敗はトランザクション検証を妨げない
+                }
+            }
+
+            $expiresDateMs = $transactionPayload['expiresDate'] ?? null;
+            $expiresAt = $expiresDateMs
+                ? (new \DateTimeImmutable)->setTimestamp((int) ($expiresDateMs / 1000))
+                : new \DateTimeImmutable;
+
+            $purchaseDateMs = $transactionPayload['originalPurchaseDate'] ?? $transactionPayload['purchaseDate'] ?? (time() * 1000);
+            $autoRenewing = isset($renewalPayload['autoRenewStatus']) ? ($renewalPayload['autoRenewStatus'] === 1) : true;
+            $isInBillingRetry = (bool) ($renewalPayload['isInBillingRetryPeriod'] ?? false);
+            $gracePeriodMs = $renewalPayload['gracePeriodExpiresDate'] ?? null;
+            $gracePeriodExpiresAt = $gracePeriodMs !== null
+                ? (new \DateTimeImmutable)->setTimestamp((int) ($gracePeriodMs / 1000))
+                : null;
+
+            $statusStr = match ($txStatus) {
+                1 => 'active',
+                3 => 'billing_retry',
+                4 => 'grace_period',
+                5 => 'revoked',
+                default => 'expired',
+            };
+
+            $subscriptionInfo = new SubscriptionInfo(
+                originalTransactionId: (string) ($transactionPayload['originalTransactionId'] ?? $originalTransactionId),
+                currentTransactionId: (string) ($transactionPayload['transactionId'] ?? $originalTransactionId),
+                startsAt: (new \DateTimeImmutable)->setTimestamp((int) ($purchaseDateMs / 1000)),
+                expiresAt: $expiresAt,
+                autoRenewing: $autoRenewing,
+                status: $statusStr,
+                isInBillingRetry: $isInBillingRetry,
+                gracePeriodExpiresAt: $gracePeriodExpiresAt,
+            );
+
+            return new VerificationResult(
+                isValid: $isValid,
+                transactionId: (string) ($transactionPayload['transactionId'] ?? $originalTransactionId),
+                productId: $transactionPayload['productId'] ?? $productId,
+                rawResponse: $responseData,
+                subscriptionInfo: $subscriptionInfo,
+            );
+        } catch (\Exception $e) {
+            return new VerificationResult(
+                isValid: false,
+                transactionId: $originalTransactionId,
+                productId: $productId,
+                rawResponse: [],
+                errorMessage: $e->getMessage(),
+            );
+        }
+    }
+
+    /**
+     * レスポンスの `data` 配列から `originalTransactionId` に一致する最新トランザクションを探す。
+     *
+     * @param array  $responseData   API レスポンスの連想配列
+     * @param string $originalTxId  探すトランザクション ID
+     * @return array|null 見つかった場合はトランザクション配列、なければ null
+     */
+    private function findLastTransaction(array $responseData, string $originalTxId): ?array
+    {
+        foreach ($responseData['data'] ?? [] as $group) {
+            foreach ($group['lastTransactions'] ?? [] as $lastTx) {
+                if ((string) ($lastTx['originalTransactionId'] ?? '') === $originalTxId) {
+                    return $lastTx;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * JWS の第2セグメント（ペイロード）を base64url デコードして transactionId を返す。
      *
      * Apple API が権威的に検証するため、ここでは署名検証を行わない。

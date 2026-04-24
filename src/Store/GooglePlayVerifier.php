@@ -191,4 +191,22 @@ class GooglePlayVerifier implements StoreVerifierInterface
 
         return true;
     }
+
+    /**
+     * Google Play は purchaseToken ベースのため refreshSubscriptionStatus はサポートしない。
+     *
+     * @param string $originalTransactionId 未使用
+     * @param string $productId             未使用
+     * @return VerificationResult 常に isValid: false
+     */
+    public function refreshSubscriptionStatus(string $originalTransactionId, string $productId): VerificationResult
+    {
+        return new VerificationResult(
+            isValid: false,
+            transactionId: $originalTransactionId,
+            productId: $productId,
+            rawResponse: [],
+            errorMessage: 'Google Play does not support refreshSubscriptionStatus. Use verifySubscription with purchase token instead.',
+        );
+    }
 }

@@ -289,6 +289,100 @@ class AppleStoreVerifierTest extends TestCase
             $result->subscriptionInfo->gracePeriodExpiresAt->getTimestamp()
         );
     }
+
+    public function test_refreshSubscriptionStatus_returns_valid_for_active_subscription(): void
+    {
+        $originalTransactionId = '9876543210';
+        $transactionPayload = [
+            'transactionId' => $originalTransactionId,
+            'originalTransactionId' => $originalTransactionId,
+            'productId' => 'com.example.myapp.premium',
+            'bundleId' => 'com.example.myapp',
+            'purchaseDate' => 1700000000000,
+            'expiresDate' => (time() + 3600) * 1000,
+            'environment' => 'Sandbox',
+        ];
+        $renewalPayload = ['autoRenewStatus' => 1, 'isInBillingRetryPeriod' => false];
+        $signedTransactionInfo = $this->makeJws($transactionPayload);
+        $signedRenewalInfo = $this->makeJws($renewalPayload);
+
+        $responseBody = [
+            'data' => [[
+                'subscriptionGroupIdentifier' => '12345678',
+                'lastTransactions' => [[
+                    'originalTransactionId' => $originalTransactionId,
+                    'status' => 1,
+                    'signedTransactionInfo' => $signedTransactionInfo,
+                    'signedRenewalInfo' => $signedRenewalInfo,
+                ]],
+            ]],
+        ];
+
+        $httpClient = $this->makeMockHttpClient(200, $responseBody);
+        $verifier = new TestableAppleStoreVerifier($this->configWithKey, $httpClient);
+        $verifier->jwsPayloads = [
+            $signedTransactionInfo => $transactionPayload,
+            $signedRenewalInfo => $renewalPayload,
+        ];
+
+        $result = $verifier->refreshSubscriptionStatus($originalTransactionId, 'prod1');
+
+        $this->assertTrue($result->isValid);
+        $this->assertNotNull($result->subscriptionInfo);
+        $this->assertSame('active', $result->subscriptionInfo->status);
+        $this->assertTrue($result->subscriptionInfo->autoRenewing);
+    }
+
+    public function test_refreshSubscriptionStatus_returns_invalid_for_expired_subscription(): void
+    {
+        $originalTransactionId = '1111111111';
+        $transactionPayload = [
+            'transactionId' => $originalTransactionId,
+            'originalTransactionId' => $originalTransactionId,
+            'productId' => 'com.example.myapp.premium',
+            'bundleId' => 'com.example.myapp',
+            'purchaseDate' => 1700000000000,
+            'expiresDate' => (time() - 3600) * 1000,
+            'environment' => 'Sandbox',
+        ];
+        $renewalPayload = ['autoRenewStatus' => 0];
+        $signedTransactionInfo = $this->makeJws($transactionPayload);
+        $signedRenewalInfo = $this->makeJws($renewalPayload);
+
+        $responseBody = [
+            'data' => [[
+                'lastTransactions' => [[
+                    'originalTransactionId' => $originalTransactionId,
+                    'status' => 2,
+                    'signedTransactionInfo' => $signedTransactionInfo,
+                    'signedRenewalInfo' => $signedRenewalInfo,
+                ]],
+            ]],
+        ];
+
+        $httpClient = $this->makeMockHttpClient(200, $responseBody);
+        $verifier = new TestableAppleStoreVerifier($this->configWithKey, $httpClient);
+        $verifier->jwsPayloads = [
+            $signedTransactionInfo => $transactionPayload,
+            $signedRenewalInfo => $renewalPayload,
+        ];
+
+        $result = $verifier->refreshSubscriptionStatus($originalTransactionId, 'prod1');
+
+        $this->assertFalse($result->isValid);
+        $this->assertSame('expired', $result->subscriptionInfo->status);
+    }
+
+    public function test_refreshSubscriptionStatus_returns_invalid_when_not_found_in_response(): void
+    {
+        $httpClient = $this->makeMockHttpClient(200, ['data' => []]);
+        $verifier = new TestableAppleStoreVerifier($this->configWithKey, $httpClient);
+
+        $result = $verifier->refreshSubscriptionStatus('nonexistent', 'prod1');
+
+        $this->assertFalse($result->isValid);
+        $this->assertStringContainsString('No matching transaction', $result->errorMessage);
+    }
 }
 
 class TestableAppleStoreVerifier extends AppleStoreVerifier

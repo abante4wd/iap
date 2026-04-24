@@ -48,9 +48,9 @@ class SubscriptionCheckService
             try {
                 $verifier = $this->verifierFactory->make($subscription->platform);
 
-                $result = $verifier->verifySubscription(
+                $result = $verifier->refreshSubscriptionStatus(
+                    $subscription->originalTransactionId,
                     $subscription->storeProductId,
-                    $subscription->currentTransactionId,
                 );
 
                 if ($result->subscriptionInfo) {

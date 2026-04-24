@@ -45,4 +45,16 @@ interface StoreVerifierInterface
      * @return bool Acknowledge が成功した場合は true
      */
     public function acknowledge(string $productId, string $purchaseToken): bool;
+
+    /**
+     * originalTransactionId でサブスクリプション最新状態を取得する。
+     * クライアントトークン不要で定期チェックに使用できる。
+     *
+     * Google Play は purchaseToken ベースのため `isValid: false` とエラーメッセージを返す。
+     *
+     * @param string $originalTransactionId プラットフォーム上の元トランザクション ID
+     * @param string $productId             商品 ID
+     * @return VerificationResult 最新の検証結果（有効な場合は subscriptionInfo を含む）
+     */
+    public function refreshSubscriptionStatus(string $originalTransactionId, string $productId): VerificationResult;
 }
