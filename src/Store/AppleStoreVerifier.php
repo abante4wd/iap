@@ -148,13 +148,14 @@ class AppleStoreVerifier implements StoreVerifierInterface
 
             // environment 検証
             $expectedEnv = $this->config->environment === 'production' ? 'Production' : 'Sandbox';
-            if (isset($transactionPayload['environment']) && $transactionPayload['environment'] !== $expectedEnv) {
+            $actualEnv = $transactionPayload['environment'] ?? 'unknown';
+            if ($actualEnv !== $expectedEnv) {
                 return new VerificationResult(
                     isValid: false,
                     transactionId: $transactionId,
                     productId: $productId,
                     rawResponse: $responseData,
-                    errorMessage: 'Environment mismatch: expected ' . $expectedEnv . ', got ' . $transactionPayload['environment'],
+                    errorMessage: 'Environment mismatch: expected ' . $expectedEnv . ', got ' . $actualEnv,
                 );
             }
 

@@ -86,6 +86,7 @@ class AppleStoreVerifierTest extends TestCase
             'transactionId' => $transactionId,
             'productId' => 'com.example.myapp.gem100',
             'bundleId' => 'com.example.myapp',
+            'environment' => 'Sandbox',
         ];
         $signedTransactionInfo = $this->makeJws($responsePayload);
 
@@ -209,6 +210,84 @@ class AppleStoreVerifierTest extends TestCase
 
         $this->assertFalse($result->isValid);
         $this->assertStringContainsString('Environment mismatch', $result->errorMessage);
+    }
+
+    public function test_verifySubscription_defaults_autoRenewing_true_when_no_renewalInfo(): void
+    {
+        $transactionId = '999111222';
+        $inputJws = $this->makeJws(['transactionId' => $transactionId]);
+
+        $transactionPayload = [
+            'transactionId' => $transactionId,
+            'originalTransactionId' => $transactionId,
+            'productId' => 'com.example.myapp.premium',
+            'bundleId' => 'com.example.myapp',
+            'purchaseDate' => 1700000000000,
+            'expiresDate' => (time() + 3600) * 1000,
+            'environment' => 'Sandbox',
+        ];
+        $signedTransactionInfo = $this->makeJws($transactionPayload);
+
+        // signedRenewalInfo を含まないレスポンス
+        $httpClient = $this->makeMockHttpClient(200, [
+            'signedTransactionInfo' => $signedTransactionInfo,
+        ]);
+
+        $verifier = new TestableAppleStoreVerifier($this->configWithKey, $httpClient);
+        $verifier->jwsPayloads = [$signedTransactionInfo => $transactionPayload];
+
+        $result = $verifier->verifySubscription('prod1', $inputJws);
+
+        $this->assertTrue($result->isValid);
+        $this->assertNotNull($result->subscriptionInfo);
+        $this->assertTrue($result->subscriptionInfo->autoRenewing); // renewalInfo なしはデフォルト true
+        $this->assertFalse($result->subscriptionInfo->isInBillingRetry);
+        $this->assertNull($result->subscriptionInfo->gracePeriodExpiresAt);
+    }
+
+    public function test_verifySubscription_reads_gracePeriodExpiresAt_from_renewalInfo(): void
+    {
+        $transactionId = '888111222';
+        $inputJws = $this->makeJws(['transactionId' => $transactionId]);
+        $gracePeriodMs = (time() + 86400) * 1000; // 24時間後
+
+        $transactionPayload = [
+            'transactionId' => $transactionId,
+            'originalTransactionId' => $transactionId,
+            'productId' => 'com.example.myapp.premium',
+            'bundleId' => 'com.example.myapp',
+            'purchaseDate' => 1700000000000,
+            'expiresDate' => (time() - 3600) * 1000, // 既に期限切れ
+            'environment' => 'Sandbox',
+        ];
+        $renewalPayload = [
+            'autoRenewStatus' => 1,
+            'gracePeriodExpiresDate' => $gracePeriodMs,
+        ];
+        $signedTransactionInfo = $this->makeJws($transactionPayload);
+        $signedRenewalInfo = $this->makeJws($renewalPayload);
+
+        $httpClient = $this->makeMockHttpClient(200, [
+            'signedTransactionInfo' => $signedTransactionInfo,
+            'signedRenewalInfo' => $signedRenewalInfo,
+        ]);
+
+        $verifier = new TestableAppleStoreVerifier($this->configWithKey, $httpClient);
+        $verifier->jwsPayloads = [
+            $signedTransactionInfo => $transactionPayload,
+            $signedRenewalInfo => $renewalPayload,
+        ];
+
+        $result = $verifier->verifySubscription('prod1', $inputJws);
+
+        $this->assertTrue($result->isValid);
+        $this->assertNotNull($result->subscriptionInfo);
+        $this->assertNotNull($result->subscriptionInfo->gracePeriodExpiresAt);
+        $expected = (new \DateTimeImmutable)->setTimestamp((int) ($gracePeriodMs / 1000));
+        $this->assertSame(
+            $expected->getTimestamp(),
+            $result->subscriptionInfo->gracePeriodExpiresAt->getTimestamp()
+        );
     }
 }
 
