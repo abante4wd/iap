@@ -5,3 +5,14 @@ composer.lock
 *.key
 *.pem
 *.p8
+/.idea/.gitignore
+/.idea/awsToolkit.xml
+/.idea/iap_abante.iml
+/.idea/laravel-idea.xml
+/.idea/modules.xml
+/.idea/php.xml
+/.idea/php-docker-settings.xml
+/.idea/phpunit.xml
+/.idea/vcs.xml
+/.phpunit.cache/test-results
+/composer.phar
