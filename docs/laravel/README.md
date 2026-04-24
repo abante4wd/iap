@@ -36,21 +36,24 @@ docs/laravel/
 
 ### 1. パッケージをインストール
 
-```bash
-composer require abante4wd/iap
-```
-
-プライベートリポジトリの場合は `composer.json` に `repositories` を追加:
+`composer.json` に以下を追加してインストール:
 
 ```json
 {
     "repositories": [
         {
             "type": "vcs",
-            "url": "git@github.com:abante4wd/iap.git"
+            "url": "https://github.com/abante4wd/iap"
         }
-    ]
+    ],
+    "require": {
+        "abante4wd/iap": "^1.0"
+    }
 }
+```
+
+```bash
+composer install
 ```
 
 #### ZIP ファイルから導入する場合
