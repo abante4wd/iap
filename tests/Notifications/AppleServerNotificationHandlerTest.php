@@ -7,6 +7,7 @@ use Abante4wd\Iap\Enums\Platform;
 use Abante4wd\Iap\Enums\PurchaseStatus;
 use Abante4wd\Iap\Notifications\AppleServerNotificationHandler;
 use Abante4wd\Iap\Services\DeferredPurchaseService;
+use Abante4wd\Iap\Store\AppleJwsVerifier;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -108,7 +109,7 @@ class AppleServerNotificationHandlerTest extends TestCase
 
     public function test_real_handler_rejects_invalid_jws_in_signed_payload(): void
     {
-        $jwsVerifier = new \Abante4wd\Iap\Store\AppleJwsVerifier();
+        $jwsVerifier = new AppleJwsVerifier();
         $handler = new AppleServerNotificationHandler($this->deferredService, $jwsVerifier);
 
         // フォーマット不正なフェイクJWSは本物の署名検証で必ず失敗する
