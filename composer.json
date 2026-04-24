@@ -6,7 +6,8 @@
     "keywords": ["iap", "in-app-purchase", "google-play", "apple", "receipt-verification"],
     "authors": [
         {
-            "name": "abante4wd"
+            "name": "abante4wd",
+            "email": "k011a1343@gmail.com"
         }
     ],
     "require": {
