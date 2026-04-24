@@ -384,6 +384,29 @@ class AppleStoreVerifierTest extends TestCase
         $this->assertFalse($result->isValid);
         $this->assertStringContainsString('No matching transaction', $result->errorMessage);
     }
+
+    public function test_refreshSubscriptionStatus_returns_invalid_when_signed_transaction_info_missing(): void
+    {
+        $originalTransactionId = '9999999999';
+
+        $responseBody = [
+            'data' => [[
+                'lastTransactions' => [[
+                    'originalTransactionId' => $originalTransactionId,
+                    'status' => 1,
+                    // signedTransactionInfo が意図的に欠如
+                ]],
+            ]],
+        ];
+
+        $httpClient = $this->makeMockHttpClient(200, $responseBody);
+        $verifier = new TestableAppleStoreVerifier($this->configWithKey, $httpClient);
+
+        $result = $verifier->refreshSubscriptionStatus($originalTransactionId, 'prod1');
+
+        $this->assertFalse($result->isValid);
+        $this->assertStringContainsString('No signedTransactionInfo', $result->errorMessage);
+    }
 }
 
 class TestableAppleStoreVerifier extends AppleStoreVerifier

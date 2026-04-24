@@ -339,7 +339,16 @@ class AppleStoreVerifier implements StoreVerifierInterface
                 ? (new \DateTimeImmutable)->setTimestamp((int) ($expiresDateMs / 1000))
                 : new \DateTimeImmutable;
 
-            $purchaseDateMs = $transactionPayload['originalPurchaseDate'] ?? $transactionPayload['purchaseDate'] ?? 0;
+            $purchaseDateMs = $transactionPayload['originalPurchaseDate'] ?? $transactionPayload['purchaseDate'] ?? null;
+            if ($purchaseDateMs === null) {
+                return new VerificationResult(
+                    isValid: false,
+                    transactionId: $originalTransactionId,
+                    productId: $productId,
+                    rawResponse: $responseData,
+                    errorMessage: 'Missing purchaseDate in transaction payload',
+                );
+            }
             $autoRenewing = isset($renewalPayload['autoRenewStatus']) ? ($renewalPayload['autoRenewStatus'] === 1) : true;
             $isInBillingRetry = (bool) ($renewalPayload['isInBillingRetryPeriod'] ?? false);
             $gracePeriodMs = $renewalPayload['gracePeriodExpiresDate'] ?? null;
