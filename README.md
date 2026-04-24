@@ -256,7 +256,14 @@ $result = $appleHandler->handle($requestBody);
 | Apple | `ONE_TIME_CHARGE` (ACCEPTED) | 保留購入を完了 |
 | Apple | `ONE_TIME_CHARGE` (DECLINED) | 保留購入をキャンセル |
 | Apple | `REVOKE` | 購入をキャンセル |
-| Apple | `SUBSCRIBED` / `DID_RENEW` 等 | サブスク更新を記録 |
+| Apple | `SUBSCRIBED` / `DID_RENEW` / `DID_CHANGE_RENEWAL_STATUS` / `DID_CHANGE_RENEWAL_PREF` / `OFFER_REDEEMED` / `PRICE_INCREASE` | サブスク更新を記録 |
+| Apple | `EXPIRED` / `GRACE_PERIOD_EXPIRED` | サブスク期限切れ |
+| Apple | `DID_FAIL_TO_RENEW` | 課金失敗（請求リトライ中） |
+| Apple | `REFUND` | 返金 |
+| Apple | `REFUND_DECLINED` | 返金拒否 |
+| Apple | `REFUND_REVERSED` | 返金取り消し |
+| Apple | `CONSUMPTION_REQUEST` | 消耗品返金申請時の消費状況問い合わせ |
+| Apple | `TEST` | 疎通確認 |
 
 ## ホストアプリが実装するインターフェース
 
@@ -298,6 +305,9 @@ class MySubscriptionRepository implements SubscriptionRepositoryInterface
 }
 ```
 
+> `findExpiringSubscriptions()` が返すオブジェクトには `originalTransactionId` プロパティが必要。
+> これは `SubscriptionInfo` DTO の `originalTransactionId` が DB に保存されていることを前提とする。
+
 ### RewardGrantServiceInterface
 
 購入成功後の報酬付与ロジックを抽象化する。
@@ -335,7 +345,7 @@ class MyNotificationHandler implements ServerNotificationHandlerInterface
 | `ProductData` | 商品マスタ情報。`storeProductId($platform)` でストア別商品 ID を取得 |
 | `PurchaseData` | 購入トランザクション記録（`pendingReason`, `deferredAt`, `completedAt` を含む） |
 | `SubscriptionData` | サブスクリプション状態（期限切れ検査用） |
-| `SubscriptionInfo` | ストア API から取得したサブスクリプション情報 |
+| `SubscriptionInfo` | ストア API から取得したサブスクリプション情報（`isInBillingRetry`, `gracePeriodExpiresAt` を含む） |
 | `VerificationResult` | ストア API 検証結果（`isPending`, `pendingReason` を含む） |
 
 ## Enum 一覧
@@ -548,7 +558,7 @@ $this->app->bind(SubscriptionRepositoryInterface::class, QueryBuilderSubscriptio
 vendor/bin/phpunit
 ```
 
-30 件のユニットテストが含まれており、サービス層・通知ハンドラー・ファクトリをカバーしている。
+64 件のユニットテストが含まれており、サービス層・通知ハンドラー・ファクトリをカバーしている。
 
 ### CI
 
