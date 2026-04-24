@@ -60,16 +60,30 @@ class AppleServerNotificationHandler implements ServerNotificationHandlerInterfa
 
         return match ($notificationType) {
             'DID_CHANGE_RENEWAL_STATUS',
+            'DID_CHANGE_RENEWAL_PREF',
+            'OFFER_REDEEMED',
+            'PRICE_INCREASE',
             'SUBSCRIBED',
             'DID_RENEW' => $this->handleSubscriptionEvent($notificationType, $subtype, $transactionInfo),
 
+            'EXPIRED',
+            'GRACE_PERIOD_EXPIRED' => $this->handleSubscriptionExpired($notificationType, $subtype, $transactionInfo),
+
+            'DID_FAIL_TO_RENEW' => $this->handleBillingFailed($subtype, $transactionInfo),
+
             'REVOKE' => $this->handleRevoke($transactionInfo),
+
+            'REFUND' => $this->handleRefund($transactionInfo),
+            'REFUND_DECLINED' => $this->handleRefundDeclined($transactionInfo),
+            'REFUND_REVERSED' => $this->handleRefundReversed($transactionInfo),
 
             // 消耗品の返金申請時に Apple がサーバーに消費状況を問い合わせる通知
             'CONSUMPTION_REQUEST' => $this->handleConsumptionRequest($transactionInfo),
 
             // 保留中の購入が承認/却下された
             'ONE_TIME_CHARGE' => $this->handleOneTimeCharge($subtype, $transactionInfo),
+
+            'TEST' => ['type' => 'TEST', 'action' => 'test', 'details' => []],
 
             default => [
                 'type' => $notificationType,
@@ -134,6 +148,102 @@ class AppleServerNotificationHandler implements ServerNotificationHandlerInterfa
         return [
             'type' => 'CONSUMPTION_REQUEST',
             'action' => 'consumption_requested',
+            'details' => [
+                'transactionId' => $transactionInfo['transactionId'] ?? '',
+                'productId' => $transactionInfo['productId'] ?? '',
+            ],
+        ];
+    }
+
+    /**
+     * サブスクリプション期限切れ（EXPIRED / GRACE_PERIOD_EXPIRED）通知を処理する。
+     *
+     * @param string $type            notificationType
+     * @param string $subtype         通知のサブタイプ
+     * @param array  $transactionInfo デコード済みのトランザクション情報
+     * @return array{type: string, action: string, details: array}
+     */
+    private function handleSubscriptionExpired(string $type, string $subtype, array $transactionInfo): array
+    {
+        return [
+            'type' => $type,
+            'action' => 'subscription_expired',
+            'details' => [
+                'subtype' => $subtype,
+                'transactionId' => $transactionInfo['transactionId'] ?? '',
+                'productId' => $transactionInfo['productId'] ?? '',
+            ],
+        ];
+    }
+
+    /**
+     * 課金失敗（DID_FAIL_TO_RENEW）通知を処理する。
+     *
+     * @param string $subtype         通知のサブタイプ
+     * @param array  $transactionInfo デコード済みのトランザクション情報
+     * @return array{type: string, action: string, details: array}
+     */
+    private function handleBillingFailed(string $subtype, array $transactionInfo): array
+    {
+        return [
+            'type' => 'DID_FAIL_TO_RENEW',
+            'action' => 'subscription_billing_failed',
+            'details' => [
+                'subtype' => $subtype,
+                'transactionId' => $transactionInfo['transactionId'] ?? '',
+                'productId' => $transactionInfo['productId'] ?? '',
+            ],
+        ];
+    }
+
+    /**
+     * 返金（REFUND）通知を処理する。
+     *
+     * @param array $transactionInfo デコード済みのトランザクション情報
+     * @return array{type: string, action: string, details: array}
+     */
+    private function handleRefund(array $transactionInfo): array
+    {
+        return [
+            'type' => 'REFUND',
+            'action' => 'refunded',
+            'details' => [
+                'transactionId' => $transactionInfo['transactionId'] ?? '',
+                'productId' => $transactionInfo['productId'] ?? '',
+                'revocationReason' => $transactionInfo['revocationReason'] ?? null,
+            ],
+        ];
+    }
+
+    /**
+     * 返金拒否（REFUND_DECLINED）通知を処理する。
+     *
+     * @param array $transactionInfo デコード済みのトランザクション情報
+     * @return array{type: string, action: string, details: array}
+     */
+    private function handleRefundDeclined(array $transactionInfo): array
+    {
+        return [
+            'type' => 'REFUND_DECLINED',
+            'action' => 'refund_declined',
+            'details' => [
+                'transactionId' => $transactionInfo['transactionId'] ?? '',
+                'productId' => $transactionInfo['productId'] ?? '',
+            ],
+        ];
+    }
+
+    /**
+     * 返金取り消し（REFUND_REVERSED）通知を処理する。
+     *
+     * @param array $transactionInfo デコード済みのトランザクション情報
+     * @return array{type: string, action: string, details: array}
+     */
+    private function handleRefundReversed(array $transactionInfo): array
+    {
+        return [
+            'type' => 'REFUND_REVERSED',
+            'action' => 'refund_reversed',
             'details' => [
                 'transactionId' => $transactionInfo['transactionId'] ?? '',
                 'productId' => $transactionInfo['productId'] ?? '',

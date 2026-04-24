@@ -132,6 +132,88 @@ class AppleServerNotificationHandlerTest extends TestCase
         $this->assertStringContainsString('JWS', $result['details']['error']);
     }
 
+    public function test_expired_returns_subscription_expired(): void
+    {
+        $result = $this->handler->handle($this->makePayload('EXPIRED', 'VOLUNTARY', 'tx_1'));
+
+        $this->assertSame('EXPIRED', $result['type']);
+        $this->assertSame('subscription_expired', $result['action']);
+        $this->assertSame('VOLUNTARY', $result['details']['subtype']);
+    }
+
+    public function test_did_fail_to_renew_returns_billing_failed(): void
+    {
+        $result = $this->handler->handle($this->makePayload('DID_FAIL_TO_RENEW', '', 'tx_2'));
+
+        $this->assertSame('DID_FAIL_TO_RENEW', $result['type']);
+        $this->assertSame('subscription_billing_failed', $result['action']);
+    }
+
+    public function test_grace_period_expired_returns_subscription_expired(): void
+    {
+        $result = $this->handler->handle($this->makePayload('GRACE_PERIOD_EXPIRED', '', 'tx_3'));
+
+        $this->assertSame('GRACE_PERIOD_EXPIRED', $result['type']);
+        $this->assertSame('subscription_expired', $result['action']);
+    }
+
+    public function test_refund_returns_refunded(): void
+    {
+        $result = $this->handler->handle($this->makePayload('REFUND', '', 'tx_4', ['revocationReason' => 0]));
+
+        $this->assertSame('REFUND', $result['type']);
+        $this->assertSame('refunded', $result['action']);
+        $this->assertSame(0, $result['details']['revocationReason']);
+    }
+
+    public function test_refund_declined_returns_refund_declined(): void
+    {
+        $result = $this->handler->handle($this->makePayload('REFUND_DECLINED', '', 'tx_5'));
+
+        $this->assertSame('REFUND_DECLINED', $result['type']);
+        $this->assertSame('refund_declined', $result['action']);
+    }
+
+    public function test_refund_reversed_returns_refund_reversed(): void
+    {
+        $result = $this->handler->handle($this->makePayload('REFUND_REVERSED', '', 'tx_6'));
+
+        $this->assertSame('REFUND_REVERSED', $result['type']);
+        $this->assertSame('refund_reversed', $result['action']);
+    }
+
+    public function test_did_change_renewal_pref_returns_subscription_updated(): void
+    {
+        $result = $this->handler->handle($this->makePayload('DID_CHANGE_RENEWAL_PREF', 'DOWNGRADE', 'tx_7'));
+
+        $this->assertSame('DID_CHANGE_RENEWAL_PREF', $result['type']);
+        $this->assertSame('subscription_updated', $result['action']);
+    }
+
+    public function test_offer_redeemed_returns_subscription_updated(): void
+    {
+        $result = $this->handler->handle($this->makePayload('OFFER_REDEEMED', 'INITIAL_BUY', 'tx_8'));
+
+        $this->assertSame('OFFER_REDEEMED', $result['type']);
+        $this->assertSame('subscription_updated', $result['action']);
+    }
+
+    public function test_price_increase_returns_subscription_updated(): void
+    {
+        $result = $this->handler->handle($this->makePayload('PRICE_INCREASE', 'PENDING', 'tx_9'));
+
+        $this->assertSame('PRICE_INCREASE', $result['type']);
+        $this->assertSame('subscription_updated', $result['action']);
+    }
+
+    public function test_test_notification_returns_test_action(): void
+    {
+        $result = $this->handler->handle($this->makePayload('TEST', '', ''));
+
+        $this->assertSame('TEST', $result['type']);
+        $this->assertSame('test', $result['action']);
+    }
+
     // --- ヘルパーメソッド ---
 
     /**
