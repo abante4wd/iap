@@ -370,6 +370,7 @@ class AppleStoreVerifierTest extends TestCase
         $result = $verifier->refreshSubscriptionStatus($originalTransactionId, 'prod1');
 
         $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->subscriptionInfo);
         $this->assertSame('expired', $result->subscriptionInfo->status);
     }
 

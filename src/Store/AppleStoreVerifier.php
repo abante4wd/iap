@@ -291,7 +291,29 @@ class AppleStoreVerifier implements StoreVerifierInterface
             $txStatus = (int) ($lastTx['status'] ?? 0);
             $isValid = in_array($txStatus, [1, 3, 4], true);
 
+            if (empty($lastTx['signedTransactionInfo'])) {
+                return new VerificationResult(
+                    isValid: false,
+                    transactionId: $originalTransactionId,
+                    productId: $productId,
+                    rawResponse: $responseData,
+                    errorMessage: 'No signedTransactionInfo in lastTransaction',
+                );
+            }
+
             $transactionPayload = $this->verifyJwsSignature($lastTx['signedTransactionInfo']);
+
+            $expectedEnv = $this->config->environment === 'production' ? 'Production' : 'Sandbox';
+            $actualEnv = $transactionPayload['environment'] ?? 'unknown';
+            if ($actualEnv !== $expectedEnv) {
+                return new VerificationResult(
+                    isValid: false,
+                    transactionId: $originalTransactionId,
+                    productId: $productId,
+                    rawResponse: $responseData,
+                    errorMessage: 'Environment mismatch: expected ' . $expectedEnv . ', got ' . $actualEnv,
+                );
+            }
 
             if ($transactionPayload['bundleId'] !== $this->config->bundleId) {
                 return new VerificationResult(
@@ -317,7 +339,7 @@ class AppleStoreVerifier implements StoreVerifierInterface
                 ? (new \DateTimeImmutable)->setTimestamp((int) ($expiresDateMs / 1000))
                 : new \DateTimeImmutable;
 
-            $purchaseDateMs = $transactionPayload['originalPurchaseDate'] ?? $transactionPayload['purchaseDate'] ?? (time() * 1000);
+            $purchaseDateMs = $transactionPayload['originalPurchaseDate'] ?? $transactionPayload['purchaseDate'] ?? 0;
             $autoRenewing = isset($renewalPayload['autoRenewStatus']) ? ($renewalPayload['autoRenewStatus'] === 1) : true;
             $isInBillingRetry = (bool) ($renewalPayload['isInBillingRetryPeriod'] ?? false);
             $gracePeriodMs = $renewalPayload['gracePeriodExpiresDate'] ?? null;
