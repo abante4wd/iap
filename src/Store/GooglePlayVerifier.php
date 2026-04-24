@@ -106,7 +106,8 @@ class GooglePlayVerifier implements StoreVerifierInterface
     /**
      * サブスクリプション購入を Google Play Developer API (v2) で検証する。
      *
-     * SUBSCRIPTION_STATE_EXPIRED 以外を有効と判定する。
+     * SUBSCRIPTION_STATE_ACTIVE / SUBSCRIPTION_STATE_CANCELED /
+     * SUBSCRIPTION_STATE_IN_GRACE_PERIOD のみ有効と判定する。
      * SubscriptionInfo を構築して VerificationResult に付与する。
      *
      * @param string      $productId            Google Play のサブスクリプション商品 ID
@@ -148,13 +149,14 @@ class GooglePlayVerifier implements StoreVerifierInterface
                 default => 'expired',
             };
 
+            $startTime = $response->getStartTime();
             $latestOrderId = $response->getLatestOrderId() ?? '';
 
             $subscriptionInfo = new SubscriptionInfo(
                 originalTransactionId: $purchaseToken,
                 currentTransactionId: $latestOrderId,
-                startsAt: $response->getStartTime() !== null
-                    ? new \DateTimeImmutable($response->getStartTime())
+                startsAt: $startTime !== null
+                    ? new \DateTimeImmutable($startTime)
                     : new \DateTimeImmutable,
                 expiresAt: $expiryTime ? new \DateTimeImmutable($expiryTime) : new \DateTimeImmutable,
                 autoRenewing: $autoRenewing,
