@@ -83,6 +83,7 @@ class AppleServerNotificationHandler implements ServerNotificationHandlerInterfa
             // 保留中の購入が承認/却下された
             'ONE_TIME_CHARGE' => $this->handleOneTimeCharge($subtype, $transactionInfo),
 
+            // Apple からの疎通確認通知。signedTransactionInfo は含まれない仕様
             'TEST' => ['type' => 'TEST', 'action' => 'test', 'details' => []],
 
             default => [

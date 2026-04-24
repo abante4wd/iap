@@ -86,7 +86,14 @@ class AppleServerNotificationHandlerTest extends TestCase
 
     public function test_subscription_events_return_subscription_updated(): void
     {
-        $subscriptionTypes = ['DID_CHANGE_RENEWAL_STATUS', 'SUBSCRIBED', 'DID_RENEW'];
+        $subscriptionTypes = [
+            'DID_CHANGE_RENEWAL_STATUS',
+            'DID_CHANGE_RENEWAL_PREF',
+            'OFFER_REDEEMED',
+            'PRICE_INCREASE',
+            'SUBSCRIBED',
+            'DID_RENEW',
+        ];
 
         foreach ($subscriptionTypes as $type) {
             $payload = $this->makePayload($type, 'AUTO_RENEW_ENABLED', 'tx_sub');
