@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use Fukazawa\Iap\Services\SubscriptionCheckService;
+use Abante4wd\Iap\Services\SubscriptionCheckService;
 use Illuminate\Console\Command;
 
 class CheckSubscriptionsCommand extends Command

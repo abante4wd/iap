@@ -1,9 +1,9 @@
 <?php
 
-namespace Fukazawa\Iap\Store;
+namespace Abante4wd\Iap\Store;
 
-use Fukazawa\Iap\Contracts\StoreVerifierInterface;
-use Fukazawa\Iap\Enums\Platform;
+use Abante4wd\Iap\Contracts\StoreVerifierInterface;
+use Abante4wd\Iap\Enums\Platform;
 
 class StoreVerifierFactory
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Fukazawa\Iap\Contracts;
+namespace Abante4wd\Iap\Contracts;
 
 interface ServerNotificationHandlerInterface
 {

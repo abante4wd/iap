@@ -1,11 +1,11 @@
 <?php
 
-namespace Fukazawa\Iap\Tests\Store;
+namespace Abante4wd\Iap\Tests\Store;
 
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Store\AppleStoreVerifier;
-use Fukazawa\Iap\Store\GooglePlayVerifier;
-use Fukazawa\Iap\Store\StoreVerifierFactory;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Store\AppleStoreVerifier;
+use Abante4wd\Iap\Store\GooglePlayVerifier;
+use Abante4wd\Iap\Store\StoreVerifierFactory;
 use PHPUnit\Framework\TestCase;
 
 class StoreVerifierFactoryTest extends TestCase

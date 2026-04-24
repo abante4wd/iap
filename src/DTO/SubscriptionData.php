@@ -1,9 +1,9 @@
 <?php
 
-namespace Fukazawa\Iap\DTO;
+namespace Abante4wd\Iap\DTO;
 
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Enums\SubscriptionStatus;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Enums\SubscriptionStatus;
 
 readonly class SubscriptionData
 {

@@ -1,10 +1,10 @@
 {
-    "name": "fukazawa/iap-example",
-    "description": "fukazawa/iap package usage example",
+    "name": "abante4wd/iap-example",
+    "description": "abante4wd/iap package usage example",
     "type": "project",
     "require": {
         "php": "^8.4",
-        "fukazawa/iap": "dev-main"
+        "abante4wd/iap": "dev-main"
     },
     "repositories": [
         {

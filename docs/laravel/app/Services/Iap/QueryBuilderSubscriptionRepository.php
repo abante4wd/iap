@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Services\Iap;
 
 use DateTimeImmutable;
-use Fukazawa\Iap\Contracts\SubscriptionRepositoryInterface;
-use Fukazawa\Iap\DTO\SubscriptionData;
-use Fukazawa\Iap\DTO\SubscriptionInfo;
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Enums\SubscriptionStatus;
+use Abante4wd\Iap\Contracts\SubscriptionRepositoryInterface;
+use Abante4wd\Iap\DTO\SubscriptionData;
+use Abante4wd\Iap\DTO\SubscriptionInfo;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Enums\SubscriptionStatus;
 use Illuminate\Support\Facades\DB;
 
 class QueryBuilderSubscriptionRepository implements SubscriptionRepositoryInterface

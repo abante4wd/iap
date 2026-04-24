@@ -1,23 +1,23 @@
 <?php
 
-namespace Fukazawa\Iap\Tests\Services;
+namespace Abante4wd\Iap\Tests\Services;
 
-use Fukazawa\Iap\Contracts\PurchaseRepositoryInterface;
-use Fukazawa\Iap\Contracts\RewardGrantServiceInterface;
-use Fukazawa\Iap\Contracts\StoreVerifierInterface;
-use Fukazawa\Iap\Contracts\SubscriptionRepositoryInterface;
-use Fukazawa\Iap\DTO\ProductData;
-use Fukazawa\Iap\DTO\PurchaseData;
-use Fukazawa\Iap\DTO\SubscriptionInfo;
-use Fukazawa\Iap\DTO\VerificationResult;
-use Fukazawa\Iap\Enums\PendingReason;
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Enums\PurchaseStatus;
-use Fukazawa\Iap\Enums\PurchaseType;
-use Fukazawa\Iap\Exceptions\PurchaseAlreadyVerifiedException;
-use Fukazawa\Iap\Exceptions\StoreVerificationFailedException;
-use Fukazawa\Iap\Services\PurchaseVerificationService;
-use Fukazawa\Iap\Store\StoreVerifierFactory;
+use Abante4wd\Iap\Contracts\PurchaseRepositoryInterface;
+use Abante4wd\Iap\Contracts\RewardGrantServiceInterface;
+use Abante4wd\Iap\Contracts\StoreVerifierInterface;
+use Abante4wd\Iap\Contracts\SubscriptionRepositoryInterface;
+use Abante4wd\Iap\DTO\ProductData;
+use Abante4wd\Iap\DTO\PurchaseData;
+use Abante4wd\Iap\DTO\SubscriptionInfo;
+use Abante4wd\Iap\DTO\VerificationResult;
+use Abante4wd\Iap\Enums\PendingReason;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Enums\PurchaseStatus;
+use Abante4wd\Iap\Enums\PurchaseType;
+use Abante4wd\Iap\Exceptions\PurchaseAlreadyVerifiedException;
+use Abante4wd\Iap\Exceptions\StoreVerificationFailedException;
+use Abante4wd\Iap\Services\PurchaseVerificationService;
+use Abante4wd\Iap\Store\StoreVerifierFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 

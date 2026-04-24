@@ -1,12 +1,12 @@
 <?php
 
-namespace Fukazawa\Iap\Tests\Notifications;
+namespace Abante4wd\Iap\Tests\Notifications;
 
-use Fukazawa\Iap\DTO\PurchaseData;
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Enums\PurchaseStatus;
-use Fukazawa\Iap\Notifications\GooglePlayNotificationHandler;
-use Fukazawa\Iap\Services\DeferredPurchaseService;
+use Abante4wd\Iap\DTO\PurchaseData;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Enums\PurchaseStatus;
+use Abante4wd\Iap\Notifications\GooglePlayNotificationHandler;
+use Abante4wd\Iap\Services\DeferredPurchaseService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 

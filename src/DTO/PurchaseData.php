@@ -1,10 +1,10 @@
 <?php
 
-namespace Fukazawa\Iap\DTO;
+namespace Abante4wd\Iap\DTO;
 
-use Fukazawa\Iap\Enums\PendingReason;
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Enums\PurchaseStatus;
+use Abante4wd\Iap\Enums\PendingReason;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Enums\PurchaseStatus;
 
 readonly class PurchaseData
 {

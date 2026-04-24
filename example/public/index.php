@@ -7,15 +7,15 @@ require_once __DIR__.'/../vendor/autoload.php';
 use App\InMemoryPurchaseRepository;
 use App\InMemorySubscriptionRepository;
 use App\SampleRewardGrantService;
-use Fukazawa\Iap\DTO\ProductData;
-use Fukazawa\Iap\DTO\SubscriptionInfo;
-use Fukazawa\Iap\DTO\VerificationResult;
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Enums\PurchaseType;
-use Fukazawa\Iap\Store\Config\AppleConfig;
-use Fukazawa\Iap\Store\Config\GoogleConfig;
+use Abante4wd\Iap\DTO\ProductData;
+use Abante4wd\Iap\DTO\SubscriptionInfo;
+use Abante4wd\Iap\DTO\VerificationResult;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Enums\PurchaseType;
+use Abante4wd\Iap\Store\Config\AppleConfig;
+use Abante4wd\Iap\Store\Config\GoogleConfig;
 
-echo "=== fukazawa/iap パッケージ利用サンプル ===\n";
+echo "=== abante4wd/iap パッケージ利用サンプル ===\n";
 echo 'PHP '.PHP_VERSION."\n\n";
 
 // -----------------------------------------------

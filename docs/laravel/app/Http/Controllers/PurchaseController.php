@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Exceptions\PurchaseAlreadyVerifiedException;
-use Fukazawa\Iap\Exceptions\StoreVerificationFailedException;
-use Fukazawa\Iap\Services\PurchaseVerificationService;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Exceptions\PurchaseAlreadyVerifiedException;
+use Abante4wd\Iap\Exceptions\StoreVerificationFailedException;
+use Abante4wd\Iap\Services\PurchaseVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

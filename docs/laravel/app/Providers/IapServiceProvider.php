@@ -5,13 +5,13 @@ namespace App\Providers;
 use App\Services\Iap\EloquentPurchaseRepository;
 use App\Services\Iap\EloquentSubscriptionRepository;
 use App\Services\Iap\RewardGrantService;
-use Fukazawa\Iap\Contracts\PurchaseRepositoryInterface;
-use Fukazawa\Iap\Contracts\RewardGrantServiceInterface;
-use Fukazawa\Iap\Contracts\SubscriptionRepositoryInterface;
-use Fukazawa\Iap\Store\AppleStoreVerifier;
-use Fukazawa\Iap\Store\Config\AppleConfig;
-use Fukazawa\Iap\Store\Config\GoogleConfig;
-use Fukazawa\Iap\Store\GooglePlayVerifier;
+use Abante4wd\Iap\Contracts\PurchaseRepositoryInterface;
+use Abante4wd\Iap\Contracts\RewardGrantServiceInterface;
+use Abante4wd\Iap\Contracts\SubscriptionRepositoryInterface;
+use Abante4wd\Iap\Store\AppleStoreVerifier;
+use Abante4wd\Iap\Store\Config\AppleConfig;
+use Abante4wd\Iap\Store\Config\GoogleConfig;
+use Abante4wd\Iap\Store\GooglePlayVerifier;
 use Illuminate\Support\ServiceProvider;
 
 class IapServiceProvider extends ServiceProvider

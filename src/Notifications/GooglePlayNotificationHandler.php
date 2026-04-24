@@ -1,10 +1,10 @@
 <?php
 
-namespace Fukazawa\Iap\Notifications;
+namespace Abante4wd\Iap\Notifications;
 
-use Fukazawa\Iap\Contracts\ServerNotificationHandlerInterface;
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Services\DeferredPurchaseService;
+use Abante4wd\Iap\Contracts\ServerNotificationHandlerInterface;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Services\DeferredPurchaseService;
 
 class GooglePlayNotificationHandler implements ServerNotificationHandlerInterface
 {

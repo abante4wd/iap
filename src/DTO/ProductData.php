@@ -1,9 +1,9 @@
 <?php
 
-namespace Fukazawa\Iap\DTO;
+namespace Abante4wd\Iap\DTO;
 
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Enums\PurchaseType;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Enums\PurchaseType;
 
 readonly class ProductData
 {

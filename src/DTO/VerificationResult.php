@@ -1,8 +1,8 @@
 <?php
 
-namespace Fukazawa\Iap\DTO;
+namespace Abante4wd\Iap\DTO;
 
-use Fukazawa\Iap\Enums\PendingReason;
+use Abante4wd\Iap\Enums\PendingReason;
 
 class VerificationResult
 {

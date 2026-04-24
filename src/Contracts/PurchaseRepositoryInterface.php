@@ -1,11 +1,11 @@
 <?php
 
-namespace Fukazawa\Iap\Contracts;
+namespace Abante4wd\Iap\Contracts;
 
-use Fukazawa\Iap\DTO\ProductData;
-use Fukazawa\Iap\DTO\PurchaseData;
-use Fukazawa\Iap\Enums\PendingReason;
-use Fukazawa\Iap\Enums\Platform;
+use Abante4wd\Iap\DTO\ProductData;
+use Abante4wd\Iap\DTO\PurchaseData;
+use Abante4wd\Iap\Enums\PendingReason;
+use Abante4wd\Iap\Enums\Platform;
 
 interface PurchaseRepositoryInterface
 {

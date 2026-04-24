@@ -1,6 +1,6 @@
 <?php
 
-namespace Fukazawa\Iap\Store\Config;
+namespace Abante4wd\Iap\Store\Config;
 
 readonly class GoogleConfig
 {

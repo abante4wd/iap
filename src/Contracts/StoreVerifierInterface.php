@@ -1,8 +1,8 @@
 <?php
 
-namespace Fukazawa\Iap\Contracts;
+namespace Abante4wd\Iap\Contracts;
 
-use Fukazawa\Iap\DTO\VerificationResult;
+use Abante4wd\Iap\DTO\VerificationResult;
 
 interface StoreVerifierInterface
 {

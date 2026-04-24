@@ -1,10 +1,10 @@
 <?php
 
-namespace Fukazawa\Iap\Services;
+namespace Abante4wd\Iap\Services;
 
-use Fukazawa\Iap\Contracts\SubscriptionRepositoryInterface;
-use Fukazawa\Iap\Enums\SubscriptionStatus;
-use Fukazawa\Iap\Store\StoreVerifierFactory;
+use Abante4wd\Iap\Contracts\SubscriptionRepositoryInterface;
+use Abante4wd\Iap\Enums\SubscriptionStatus;
+use Abante4wd\Iap\Store\StoreVerifierFactory;
 
 class SubscriptionCheckService
 {

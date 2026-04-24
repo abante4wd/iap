@@ -1,13 +1,13 @@
 <?php
 
-namespace Fukazawa\Iap\Store;
+namespace Abante4wd\Iap\Store;
 
 use Firebase\JWT\JWT;
-use Fukazawa\Iap\Contracts\StoreVerifierInterface;
-use Fukazawa\Iap\DTO\SubscriptionInfo;
-use Fukazawa\Iap\DTO\VerificationResult;
-use Fukazawa\Iap\Enums\PendingReason;
-use Fukazawa\Iap\Store\Config\AppleConfig;
+use Abante4wd\Iap\Contracts\StoreVerifierInterface;
+use Abante4wd\Iap\DTO\SubscriptionInfo;
+use Abante4wd\Iap\DTO\VerificationResult;
+use Abante4wd\Iap\Enums\PendingReason;
+use Abante4wd\Iap\Store\Config\AppleConfig;
 use GuzzleHttp\Client;
 
 class AppleStoreVerifier implements StoreVerifierInterface

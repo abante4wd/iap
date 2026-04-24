@@ -1,12 +1,12 @@
 {
-    "name": "fukazawa/iap",
+    "name": "abante4wd/iap",
     "description": "Framework-agnostic in-app purchase verification package for Google Play and Apple App Store",
     "type": "library",
     "license": "MIT",
     "keywords": ["iap", "in-app-purchase", "google-play", "apple", "receipt-verification"],
     "authors": [
         {
-            "name": "fukazawa"
+            "name": "abante4wd"
         }
     ],
     "require": {
@@ -20,12 +20,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Fukazawa\\Iap\\": "src/"
+            "Abante4wd\\Iap\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Fukazawa\\Iap\\Tests\\": "tests/"
+            "Abante4wd\\Iap\\Tests\\": "tests/"
         }
     },
     "config": {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Fukazawa\Iap\Enums;
+namespace Abante4wd\Iap\Enums;
 
 enum PurchaseType: string
 {

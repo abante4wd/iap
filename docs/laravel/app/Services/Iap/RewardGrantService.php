@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Iap;
 
 use App\Models\Product;
-use Fukazawa\Iap\Contracts\RewardGrantServiceInterface;
-use Fukazawa\Iap\DTO\PurchaseData;
+use Abante4wd\Iap\Contracts\RewardGrantServiceInterface;
+use Abante4wd\Iap\DTO\PurchaseData;
 
 class RewardGrantService implements RewardGrantServiceInterface
 {

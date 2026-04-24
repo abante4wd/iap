@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App;
 
-use Fukazawa\Iap\Contracts\RewardGrantServiceInterface;
-use Fukazawa\Iap\DTO\PurchaseData;
+use Abante4wd\Iap\Contracts\RewardGrantServiceInterface;
+use Abante4wd\Iap\DTO\PurchaseData;
 
 class SampleRewardGrantService implements RewardGrantServiceInterface
 {

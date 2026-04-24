@@ -1,6 +1,6 @@
 <?php
 
-namespace Fukazawa\Iap\Exceptions;
+namespace Abante4wd\Iap\Exceptions;
 
 use Exception;
 

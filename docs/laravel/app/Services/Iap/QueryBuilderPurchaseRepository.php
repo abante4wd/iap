@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\Iap;
 
-use Fukazawa\Iap\Contracts\PurchaseRepositoryInterface;
-use Fukazawa\Iap\DTO\ProductData;
-use Fukazawa\Iap\DTO\PurchaseData;
-use Fukazawa\Iap\Enums\PendingReason;
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Enums\PurchaseStatus;
-use Fukazawa\Iap\Enums\PurchaseType;
+use Abante4wd\Iap\Contracts\PurchaseRepositoryInterface;
+use Abante4wd\Iap\DTO\ProductData;
+use Abante4wd\Iap\DTO\PurchaseData;
+use Abante4wd\Iap\Enums\PendingReason;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Enums\PurchaseStatus;
+use Abante4wd\Iap\Enums\PurchaseType;
 use Illuminate\Support\Facades\DB;
 
 class QueryBuilderPurchaseRepository implements PurchaseRepositoryInterface

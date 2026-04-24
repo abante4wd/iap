@@ -1,6 +1,6 @@
 <?php
 
-namespace Fukazawa\Iap\DTO;
+namespace Abante4wd\Iap\DTO;
 
 readonly class SubscriptionInfo
 {

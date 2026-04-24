@@ -1,11 +1,11 @@
 <?php
 
-namespace Fukazawa\Iap\Contracts;
+namespace Abante4wd\Iap\Contracts;
 
-use Fukazawa\Iap\DTO\SubscriptionData;
-use Fukazawa\Iap\DTO\SubscriptionInfo;
-use Fukazawa\Iap\Enums\Platform;
-use Fukazawa\Iap\Enums\SubscriptionStatus;
+use Abante4wd\Iap\DTO\SubscriptionData;
+use Abante4wd\Iap\DTO\SubscriptionInfo;
+use Abante4wd\Iap\Enums\Platform;
+use Abante4wd\Iap\Enums\SubscriptionStatus;
 
 interface SubscriptionRepositoryInterface
 {

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Fukazawa\Iap\Notifications\AppleServerNotificationHandler;
-use Fukazawa\Iap\Notifications\GooglePlayNotificationHandler;
+use Abante4wd\Iap\Notifications\AppleServerNotificationHandler;
+use Abante4wd\Iap\Notifications\GooglePlayNotificationHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App;
 
 use DateTimeImmutable;
-use Fukazawa\Iap\Contracts\SubscriptionRepositoryInterface;
-use Fukazawa\Iap\DTO\SubscriptionInfo;
-use Fukazawa\Iap\Enums\Platform;
+use Abante4wd\Iap\Contracts\SubscriptionRepositoryInterface;
+use Abante4wd\Iap\DTO\SubscriptionInfo;
+use Abante4wd\Iap\Enums\Platform;
 
 class InMemorySubscriptionRepository implements SubscriptionRepositoryInterface
 {
