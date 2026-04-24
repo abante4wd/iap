@@ -19,7 +19,7 @@ class AppleServerNotificationHandlerTest extends TestCase
     protected function setUp(): void
     {
         $this->deferredService = $this->createMock(DeferredPurchaseService::class);
-        $this->handler = new AppleServerNotificationHandler($this->deferredService);
+        $this->handler = new TestableAppleServerNotificationHandler($this->deferredService);
     }
 
     public function test_invalid_json_returns_error(): void
@@ -106,6 +106,20 @@ class AppleServerNotificationHandlerTest extends TestCase
         $this->assertSame('ignored', $result['action']);
     }
 
+    public function test_real_handler_rejects_invalid_jws_in_signed_payload(): void
+    {
+        $jwsVerifier = new \Abante4wd\Iap\Store\AppleJwsVerifier();
+        $handler = new AppleServerNotificationHandler($this->deferredService, $jwsVerifier);
+
+        // フォーマット不正なフェイクJWSは本物の署名検証で必ず失敗する
+        $payload = json_encode(['signedPayload' => 'invalid.jws.token']);
+
+        $result = $handler->handle($payload);
+
+        $this->assertSame('error', $result['type']);
+        $this->assertStringContainsString('JWS', $result['details']['error']);
+    }
+
     // --- ヘルパーメソッド ---
 
     /**
@@ -158,5 +172,20 @@ class AppleServerNotificationHandlerTest extends TestCase
             purchaseToken: 'token123',
             status: PurchaseStatus::Verified,
         );
+    }
+}
+
+/**
+ * JWS 署名検証をバイパスするテスト用サブクラス
+ */
+class TestableAppleServerNotificationHandler extends AppleServerNotificationHandler
+{
+    protected function decodeJws(string $jws): array
+    {
+        $parts = explode('.', $jws);
+        if (count($parts) !== 3) {
+            return [];
+        }
+        return json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true) ?: [];
     }
 }
