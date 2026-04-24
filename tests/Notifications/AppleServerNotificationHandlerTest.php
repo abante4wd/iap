@@ -107,6 +107,17 @@ class AppleServerNotificationHandlerTest extends TestCase
         $this->assertSame('ignored', $result['action']);
     }
 
+    public function test_invalid_signed_transaction_info_returns_transaction_jws_error(): void
+    {
+        $handler = new TestableThrowingAppleServerNotificationHandler($this->deferredService);
+        $payload = $this->makePayload('ONE_TIME_CHARGE', 'ACCEPTED', 'tx_bad');
+
+        $result = $handler->handle($payload);
+
+        $this->assertSame('error', $result['type']);
+        $this->assertStringContainsString('Transaction JWS', $result['details']['error']);
+    }
+
     public function test_real_handler_rejects_invalid_jws_in_signed_payload(): void
     {
         $jwsVerifier = new AppleJwsVerifier();
@@ -188,5 +199,25 @@ class TestableAppleServerNotificationHandler extends AppleServerNotificationHand
             return [];
         }
         return json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true) ?: [];
+    }
+}
+
+/**
+ * signedPayload の検証は成功するが signedTransactionInfo の検証で失敗するテスト用サブクラス
+ */
+class TestableThrowingAppleServerNotificationHandler extends AppleServerNotificationHandler
+{
+    private int $callCount = 0;
+
+    protected function decodeJws(string $jws): array
+    {
+        $this->callCount++;
+        if ($this->callCount === 1) {
+            $parts = explode('.', $jws);
+            if (count($parts) === 3) {
+                return json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true) ?: [];
+            }
+        }
+        throw new \RuntimeException('JWS signature verification failed');
     }
 }

@@ -54,7 +54,7 @@ class AppleServerNotificationHandler implements ServerNotificationHandlerInterfa
         try {
             $transactionInfo = $this->extractTransactionInfo($notification);
         } catch (\RuntimeException $e) {
-            return ['type' => 'error', 'action' => 'none', 'details' => ['error' => 'JWS verification failed: ' . $e->getMessage()]];
+            return ['type' => 'error', 'action' => 'none', 'details' => ['error' => 'Transaction JWS verification failed: ' . $e->getMessage()]];
         }
         $transactionId = (string) ($transactionInfo['transactionId'] ?? '');
 
@@ -189,6 +189,7 @@ class AppleServerNotificationHandler implements ServerNotificationHandlerInterfa
      *
      * @param array $notification デコード済みの通知ペイロード
      * @return array デコード済みのトランザクション情報。signedTransactionInfo がない場合は空配列
+     * @throws \RuntimeException 署名検証に失敗した場合
      */
     private function extractTransactionInfo(array $notification): array
     {
