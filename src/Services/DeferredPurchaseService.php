@@ -9,8 +9,20 @@ use Abante4wd\Iap\Enums\Platform;
 use Abante4wd\Iap\Enums\PurchaseType;
 use Abante4wd\Iap\Store\StoreVerifierFactory;
 
+/**
+ * 保留中の購入（Ask to Buy・支払い保留等）を管理するサービス。
+ *
+ * サーバー通知受信時に completePending / cancelPending を呼び出すことで
+ * 保留状態から完了・キャンセルへ遷移させる。
+ * recheckPendingPurchases はバッチジョブから定期実行する用途を想定している。
+ */
 class DeferredPurchaseService
 {
+    /**
+     * @param StoreVerifierFactory       $verifierFactory   ストア別ベリファイアのファクトリー
+     * @param PurchaseRepositoryInterface $purchaseRepo      購入レコードリポジトリ
+     * @param RewardGrantServiceInterface $rewardGrantService 報酬付与サービス
+     */
     public function __construct(
         private StoreVerifierFactory $verifierFactory,
         private PurchaseRepositoryInterface $purchaseRepo,
@@ -18,7 +30,14 @@ class DeferredPurchaseService
     ) {}
 
     /**
-     * 保留中の購入をストアに再検証し、承認済みなら完了させる
+     * 保留中の購入をストアに再検証し、承認済みなら完了させる。
+     *
+     * 対応する保留レコードが見つからない、またはストア検証が失敗した場合は null を返す。
+     * 完了処理はトランザクション内で行い、Google 消耗品の Acknowledge と報酬付与も同時に実施する。
+     *
+     * @param Platform $platform      対象プラットフォーム
+     * @param string   $purchaseToken 保留中の購入トークン
+     * @return PurchaseData|null 完了した購入レコード。未完了・未発見の場合は null
      */
     public function completePending(Platform $platform, string $purchaseToken): ?PurchaseData
     {
@@ -66,7 +85,13 @@ class DeferredPurchaseService
     }
 
     /**
-     * 保留中の購入をキャンセルする
+     * 保留中の購入をキャンセルする。
+     *
+     * 対応する保留レコードが見つからない場合は何もしない。
+     *
+     * @param Platform    $platform      対象プラットフォーム
+     * @param string      $purchaseToken 保留中の購入トークン
+     * @param string|null $reason        キャンセル理由（省略可）
      */
     public function cancelPending(Platform $platform, string $purchaseToken, ?string $reason = null): void
     {
@@ -79,9 +104,13 @@ class DeferredPurchaseService
     }
 
     /**
-     * すべての保留中の購入を再検証する（バッチ処理用）
+     * すべての保留中の購入を再検証する（バッチ処理用）。
      *
-     * @return array{completed: int, still_pending: int, failed: int}
+     * Google・Apple 両プラットフォームの保留レコードを順に処理し、
+     * 完了・未完了・失敗の件数を返す。
+     * 個々の処理が例外をスローしても他のレコードの処理は続行する。
+     *
+     * @return array{completed: int, still_pending: int, failed: int} 処理結果の集計
      */
     public function recheckPendingPurchases(): array
     {

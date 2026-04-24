@@ -6,16 +6,29 @@ use Abante4wd\Iap\Contracts\ServerNotificationHandlerInterface;
 use Abante4wd\Iap\Enums\Platform;
 use Abante4wd\Iap\Services\DeferredPurchaseService;
 
+/**
+ * Google Play Real-time Developer Notifications (RTDN) を処理するハンドラー。
+ *
+ * Pub/Sub 経由または直接 POST されたペイロードを解析し、
+ * oneTimeProductNotification・subscriptionNotification・voidedPurchaseNotification
+ * の各通知タイプに応じた処理を行う。
+ */
 class GooglePlayNotificationHandler implements ServerNotificationHandlerInterface
 {
+    /**
+     * @param DeferredPurchaseService $deferredService 保留中購入の完了・キャンセルサービス
+     */
     public function __construct(
         private DeferredPurchaseService $deferredService,
     ) {}
 
     /**
-     * Google Play Real-time Developer Notifications (RTDN) を処理する
+     * Google Play Real-time Developer Notifications (RTDN) を処理する。
      *
-     * @return array{type: string, action: string, details: array}
+     * Pub/Sub ラップメッセージ（message.data が base64 エンコードされている形式）にも対応する。
+     *
+     * @param string $payload Google Play から受信した生のリクエストボディ（JSON 文字列）
+     * @return array{type: string, action: string, details: array} 処理結果
      */
     public function handle(string $payload): array
     {
@@ -54,6 +67,15 @@ class GooglePlayNotificationHandler implements ServerNotificationHandlerInterfac
         return ['type' => 'unknown', 'action' => 'ignored', 'details' => $data];
     }
 
+    /**
+     * 単品購入通知（oneTimeProductNotification）を処理する。
+     *
+     * notificationType 1（購入完了）: 保留購入を完了させる。
+     * notificationType 2（キャンセル）: 保留購入をキャンセルする。
+     *
+     * @param array $notification oneTimeProductNotification オブジェクト
+     * @return array{type: string, action: string, details: array}
+     */
     private function handleOneTimeProductNotification(array $notification): array
     {
         $notificationType = $notification['notificationType'] ?? 0;
@@ -100,6 +122,14 @@ class GooglePlayNotificationHandler implements ServerNotificationHandlerInterfac
         ];
     }
 
+    /**
+     * サブスクリプション通知（subscriptionNotification）を処理する。
+     *
+     * 更新・解約・アップグレード等の詳細は呼び出し元で notificationType を参照して判断する。
+     *
+     * @param array $notification subscriptionNotification オブジェクト
+     * @return array{type: string, action: string, details: array}
+     */
     private function handleSubscriptionNotification(array $notification): array
     {
         $notificationType = $notification['notificationType'] ?? 0;
@@ -117,6 +147,14 @@ class GooglePlayNotificationHandler implements ServerNotificationHandlerInterfac
         ];
     }
 
+    /**
+     * 購入無効化通知（voidedPurchaseNotification）を処理する。
+     *
+     * 返金・チャージバック等で購入が無効化された場合に対応する保留レコードをキャンセルする。
+     *
+     * @param array $notification voidedPurchaseNotification オブジェクト
+     * @return array{type: string, action: string, details: array}
+     */
     private function handleVoidedPurchaseNotification(array $notification): array
     {
         $purchaseToken = $notification['purchaseToken'] ?? '';

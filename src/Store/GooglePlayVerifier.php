@@ -10,10 +10,20 @@ use Abante4wd\Iap\Store\Config\GoogleConfig;
 use Google\Client as GoogleClient;
 use Google\Service\AndroidPublisher;
 
+/**
+ * Google Play の購入・サブスクリプションを検証するクラス。
+ *
+ * Google Play Developer API（AndroidPublisher）を使用して購入トークンの正当性を確認する。
+ * サービスアカウント認証により直接 API を呼び出す。
+ */
 class GooglePlayVerifier implements StoreVerifierInterface
 {
+    /** @var AndroidPublisher Google Play Developer API クライアント */
     private AndroidPublisher $publisher;
 
+    /**
+     * @param GoogleConfig $config Google Play 接続設定
+     */
     public function __construct(
         private GoogleConfig $config,
     ) {
@@ -25,6 +35,18 @@ class GooglePlayVerifier implements StoreVerifierInterface
         $this->publisher = new AndroidPublisher($client);
     }
 
+    /**
+     * 単品・消耗品購入を Google Play Developer API で検証する。
+     *
+     * purchaseState が 2（保留中）の場合は isPending=true を返す。
+     * purchaseState が 0（購入済み）以外の場合は isValid=false を返す。
+     *
+     * @param string      $productId            Google Play の商品 ID
+     * @param string      $purchaseToken        クライアントから受け取った購入トークン
+     * @param string|null $receiptData          未使用（Google では不要）
+     * @param bool|null   $clientReportsPending 未使用（Google の保留は API から判定）
+     * @return VerificationResult 検証結果
+     */
     public function verifyProduct(string $productId, string $purchaseToken, ?string $receiptData = null, ?bool $clientReportsPending = null): VerificationResult
     {
         try {
@@ -75,6 +97,18 @@ class GooglePlayVerifier implements StoreVerifierInterface
         }
     }
 
+    /**
+     * サブスクリプション購入を Google Play Developer API (v2) で検証する。
+     *
+     * SUBSCRIPTION_STATE_EXPIRED 以外を有効と判定する。
+     * SubscriptionInfo を構築して VerificationResult に付与する。
+     *
+     * @param string      $productId            Google Play のサブスクリプション商品 ID
+     * @param string      $purchaseToken        クライアントから受け取った購入トークン
+     * @param string|null $receiptData          未使用
+     * @param bool|null   $clientReportsPending 未使用
+     * @return VerificationResult 検証結果（有効な場合は subscriptionInfo を含む）
+     */
     public function verifySubscription(string $productId, string $purchaseToken, ?string $receiptData = null, ?bool $clientReportsPending = null): VerificationResult
     {
         try {
@@ -137,6 +171,15 @@ class GooglePlayVerifier implements StoreVerifierInterface
         }
     }
 
+    /**
+     * Google Play の消耗品購入を Acknowledge する。
+     *
+     * Acknowledge しない場合、購入から 3 日後に Google Play が自動的に返金する。
+     *
+     * @param string $productId     Google Play の商品 ID
+     * @param string $purchaseToken 購入トークン
+     * @return bool 常に true（API が例外をスローした場合は呼び出し元に伝播する）
+     */
     public function acknowledge(string $productId, string $purchaseToken): bool
     {
         $this->publisher->purchases_products->acknowledge(
