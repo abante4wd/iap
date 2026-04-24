@@ -22,11 +22,17 @@ class GooglePlayVerifier implements StoreVerifierInterface
     private AndroidPublisher $publisher;
 
     /**
-     * @param GoogleConfig $config Google Play 接続設定
+     * @param GoogleConfig          $config    Google Play 接続設定
+     * @param AndroidPublisher|null $publisher テスト用インジェクション（省略時は自動生成）
      */
     public function __construct(
         private GoogleConfig $config,
+        ?AndroidPublisher $publisher = null,
     ) {
+        if ($publisher !== null) {
+            $this->publisher = $publisher;
+            return;
+        }
         $client = new GoogleClient;
         $client->setApplicationName($this->config->applicationName);
         $client->setAuthConfig($this->config->serviceAccountJsonPath);
