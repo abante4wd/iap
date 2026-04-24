@@ -151,16 +151,22 @@ class GooglePlayVerifier implements StoreVerifierInterface
             $latestOrderId = $response->getLatestOrderId() ?? '';
 
             $subscriptionInfo = new SubscriptionInfo(
-                originalTransactionId: $latestOrderId,
+                originalTransactionId: $purchaseToken,
                 currentTransactionId: $latestOrderId,
-                startsAt: new \DateTimeImmutable($response->getStartTime()),
+                startsAt: $response->getStartTime() !== null
+                    ? new \DateTimeImmutable($response->getStartTime())
+                    : new \DateTimeImmutable,
                 expiresAt: $expiryTime ? new \DateTimeImmutable($expiryTime) : new \DateTimeImmutable,
                 autoRenewing: $autoRenewing,
                 status: $status,
             );
 
             return new VerificationResult(
-                isValid: $subscriptionState !== 'SUBSCRIPTION_STATE_EXPIRED',
+                isValid: in_array($subscriptionState, [
+                    'SUBSCRIPTION_STATE_ACTIVE',
+                    'SUBSCRIPTION_STATE_CANCELED',
+                    'SUBSCRIPTION_STATE_IN_GRACE_PERIOD',
+                ], true),
                 transactionId: $latestOrderId,
                 productId: $productId,
                 rawResponse: $responseArray,
